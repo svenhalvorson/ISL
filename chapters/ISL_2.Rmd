@@ -1,0 +1,118 @@
+---
+title: 'Chapter 2: Statistical Learning'
+subtitle: "<span style='font-size: 20px'>Notes from ISL</style>"
+author: 'Sven Halvorson'
+date: "7/9/2020"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Definitions
+
+<u><span style='font-size: 18px'>2.1</u></style>
+  
+* **Input variables**: Known values used to predict or cluster observations. Usually denoted with $X_i$ and could be referred to as predictors, independent variables, features, or simply variables.
+* **Output variables**: Values we would like to predict. Usually denoted with $Y$ and could be referred to as responses or dependent variables.
+* **Systematic information**: The function $f$ that relates predictors to responses encapsulates the systematic information.
+* **Error term**: A random error, usually denoted by $\epsilon$ that is generally assumed to independent of $X$ and have a mean of zero. This is the error that cannot be accounted for by the systematic information.
+* **Reducible and irreducible error**: The errors we make in predictions can be thought of being of two types. The reducible error are mistakes that can be reduced by better estimating the link function $f$. The irreducible error is the residual error that would still be present if we perfectly selected $f$.
+* **Training and testing data**: The initial set of observations used to estimate $f$ is called the testing data. Other data called the training set, possibly a subset of your original data set, is used to evaluate the effectiveness of $\hat{f}$,
+* **Parametric vs. non-parametric models**: Parametric models assume the general form of $f$ and estimate parameters while non-parametric models do not.
+* **Overfitting**: A model that too closely fits the training dat and consequently fails on the testing data is called overfit. The model is too closely following the irreducible errors.
+* **Regression vs. classification**: We divide supervised learning problems into regression if the response is quantitative and classification if the response is qualitative or ordinal.
+  
+<u><span style='font-size: 18px'>2.2</u></style>
+  
+* **Degrees of freedom**: A quantity that reflects the flexibility of a model.
+* **Mean square error (MSE)**: A measure of the accuracy of a statistical learning technique. Computed by averging square deviations between predictions and observed responses.
+* **Variance of a statistical learning method**: The degree to which $f$ would change between different possible training sets.
+* **Bias of a a statistical learning methods**: The degree to which the assumptions of the model are not met in the population.
+* **Variance-bias trade-off**: Attempting to completely eliminate either bias or variance will inevitably lead to the other increasing.
+* **Error rate**: The proportion of observations in the training or test set that our estimate of $f$ assigns to the true category they belong to.
+* **Bayes classifier**: The test error rate is minimized when each observation is assigned to the category with the greatest probability conditioned on the predictor values.
+* **Bayes error rate**: The minimal expected test error rate given a set of predictors.
+
+
+
+### Notes
+
+#### 2.1: What is statistical learning?
+
+At it's broadest, the goal of this book is to look at techniquest to estimate a function that connects a set of $p$ predictors, $X = (X_1, X_2, ..., X_p)$ and the response $Y$. This is written as:
+
+$$ Y = f(X) + \epsilon$$
+In general, $f$ is not known but there are many methods to try and approximate it.  
+  
+The motivation to do so falls broadly under two categories: prediction and inference. Prediction problems occur when we have a sample of the possible inputs and outputs and would like to guess outputs from another sample of inputs. In these predictions, $\hat{Y}$, we will have average square errors for a given estimate of $f$, $\hat{f}$, that are of this form:
+
+$$E(Y -\hat{Y})^2 = E[f(X)+\epsilon-\hat{f}(X)]^2$$
+Which can be re-written as:
+
+$$E(Y -\hat{Y})^2 = E[f(X)-\hat{f}(X)]^2+Var(\epsilon)$$
+This decomposition shows that the square errors of predictions are decomposible into the reducible and irreducible variance. In the prediction setting, we are trying to minimize the reducible error. The decomposition can be deribed from expeanding out the square difference, using expected value rules, the assumption that $Cov(X,Y) = 0$ and the assumption that $E(\epsilon)=0$. Just as a side note, it seems like they're using a funny notation for this. I would have written it like this:  
+$$E[(Y -\hat{Y})^2]$$
+Seems a bit weird to me to omit the parentheses that show the arguments of the expected value function.  
+  
+The second setting described is inference which is more descriptive and scientific. Here we're asking questions like what is the relationship (if any) between $X$ and $Y$l? What kind of quantitative exchanges can we make between $X$ and $Y$? These problems are more dependent on interpretation and thus we will frequently choose less flexible models to solve them.  
+  
+A distinction between flexible and interpretable models is given with the example of parametric vs. non-parametric models. Parametric models begin by assuming the general functional form of $f$ and then estimate the parameters necessary using the training data. As a result of being able to estimate the functional form of $f$, we can write better sentences about the relationship between $X$ and $Y$ and thus they are more interpretable and well suited for inference problems. The drawback of this is that the functional form may only fit a few situations and thus is not flexible. As a result, non-parametric methods can be stronger in the cases but they often lack interpretable results from the 'black-box' approach. Non-parametric models tend to require a larger number of observations because the problem is not reduced to a question of estimating a few parameters.
+  
+We're also given a distinction between supervised and unsupervised learning. Supervised learning occurs in the situations previously mentioned: prediction and inference. Here we have some set of observed values, $Y$, that we would like to know more about. The converse is unsupervised learning where no response variable is observed. In this case, we're asking if there are any natural groupings we can give the observations based on $X$. As a result this is sometimes called clustering or cluster analysis. The results of this analysis could lead to results in personalized medicine or targeted advertising.
+  
+  
+#### 2.2: Assessing model accuracy
+
+Given that there are many possible models for a set of predictors and responses, it's important to compare their accuracy. One commonly used measure is the mean square error which, as its name suggests, is the average square deviation between the responses and predictions:
+$$MSE = \frac{1}{n}\sum_{i=1}^n(y_i-\hat{f}(x_i))^2$$
+
+This is basically the variance of the errors and I suspect it is preferred over the mean absolute deviation for algebraic reasons. The MSE can be computed on both the training and test data but it is much more important in the latter case. An estimate of $f$ that has a low training MSE may be overfit and not translate well to new data. Selecting more and more flexible methods will typically decrease the training MSE but at some point the test MSE will start to rise as the model becomes overfit.
+  
+The conflict between minimizing training MSE and overfitting can be shown in the test expected MSE for a $x_0$ not in the training set:
+$$E(y_0-\hat{f}(x_0))^2=Var(\hat{f}(x_0)) + Bias(\hat{f}(x_0))^2+Var(\epsilon)$$
+Here the expected test MSE would be formed by estimating $\hat{f}$ using many training sets and averaging the square deviations of the predictions from $y_0$. This shows that we can subdivide the expected test MSE into three sources. One of which cannot be affeted for a given set of predictors, the irreducible error, but the others can. Our goal is to reduce the variance of the method and the bias however they are sometimes in conflict.
+  
+The variance refers to the degree to which $\hat{f}$ changes across many possible training sets. Flexible methods tend to have high degrees of variance because they are less constrained and tend to fit the data more closely. Bias refers to the ways in which the assumptions of the model differ from reality. Fitting a simple linear model to data produced by a quadratic function will have a higher degree of bias than it would if the data came from a roughly linear phenomenon. Less flexible methods typically produce more bias. 
+  
+In the classification setting, a common measure of model accuracy is the error rate which is computed as follows:
+$$\textrm{Error Rate} = \frac{1}{n}\sum_{i=1}^nI(y_i\neq\hat{f}(x_i))$$
+Here $I$ is an indicator function which is 1 if the condition is true and 0 otherwise. Essentially we're computing the proportion of cases where $\hat{f}$ correctly categorized the response given the set of predictors. The test error rate is minimized when we select the category for each $y_0$ that has the greatest probability given its associated predictor values, $x_0$. This is known as the Bayes classifier.
+  
+The authors say that this proof is beyond the scope of the book but unless I'm missing something, it doesn't seem that complex. I think you could just use proof by contradiction and assume that there is some other decision rule where at least one observation in the training set is assigned to a category with a less than maximal probability given its predictors. Then changing the prediction of that observation to the category that minimizes $P(Y = j|X = x_0)$. This would reduce the expected error rate.
+  
+There is an analogous irreducible error for the classification setting called the Bayes error rate. This can be expressed as:
+$$\textrm{Bayes error rate}=1-E(\mathop{max}_{i}P(Y=j|X))$$
+It's saying that for each observation in the training set, we compute the probability associated with the most likely category to assign, take expectation of that and then the converse of it. My gripe with the notation here continues as I would think you need a set of parentheses around max but I guess I'll just let it go here and try to infer what they mean in general going forward.
+
+The last piece of this chapter is a discussion of the k-nearest neighbors algorithm. This is an alogrithm for classification (although I believe it can be extended to regression) where for a test observation $x_0$, we select a natural number $K$ and find the set of $K$ 'closest' points in the training set, $\mathcal{N}_0$. Then we basically average the indicator functions of all the elements of $\mathcal{N}_0$ and then take the class $Y=j$ which has the highest probability as our classification. Compute this quantity for each category $Y=j$:
+
+$$P(Y=j) = \frac{1}{K}\sum_{i\in\mathcal{N}_0}I(y_i=j)$$
+
+Whichever has the highest is our classification. This should end up with ties some of the time so that will be the Bayes decision boundary for the algorithm. It seems like it might be kind of sticky when we get to situations with many different categories as the pariwise boundaries will be all higgldy piggldy.  
+  
+An important feature of this is the choice of $K$. If we choose $K$ to be small, say 1, our algorithm is not very flexible. A single outlier of class $\alpha$ will potentially cause us to judge many of it's neighbors as being $\alpha$ even though it is far from its kind. On the other hand, if we pick $K$ to be large, we lose the ability to use natural clustering that may appear in the data. A large $K$ will start to just reflect the overall frequencies of the training set instead of the data similar to each test observation.
+  
+The name of this algorithm makes me think about actual geography. We could think of a situation where we just use latitude and longitude as predictors for someone's political affiliation. If you were looking at a neighborhood that was predominately, but not homogeneously one party, you would not want to just ask for their literal nearest neighbor. I can imagine situation where there is one house in the center which is of the minority party and then three majority members around it that are all three closer to the center than they are to each other. If that middle house was a minority member in the training set, we would assign all three of the surrounding houses to the minority party. On the other hand, if we got a larger set, the influence of that one minority house will be less influential. On the other hand, if we pick $K$ to be the entire training set, we will basically guessing the global frequencies and ignoring any geographic patterns in party affilition.
+  
+I have a few questions about this algorithm and I think it is re-visted in the book so I'll just leave them here for now:
+1. I imagine there are other definitions of distance other than the Euclidean one. Are there advantages to using soemthing like the taxicab metric?
+2. It seems like you would want to have all the variables on the same scale, otherwise the units of one variable could have an outsized effect on which training observations fall into $\mathcal{N}_0$. I imagine people standardize or normalize data before using this technique.
+3. Is there a way to use categorical variables and mix them with continous variables? The idea of distance makes this a bit hard.
+
+### Lab
+
+```{r silent, echo = FALSE}
+
+```
+
+```{r show_code, echo=FALSE}
+
+```
+
+### Exercises
+

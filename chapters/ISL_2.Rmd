@@ -2,7 +2,7 @@
 title: 'Chapter 2: Statistical Learning'
 subtitle: "<span style='font-size: 20px'>Notes from ISL</style>"
 author: 'Sven Halvorson'
-date: "7/9/2020"
+date: "2020-09-04"
 output:
   html_document:
     toc: yes
@@ -11,6 +11,8 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library('tidyverse')
+library('kableExtra')
 ```
 
 ### Definitions
@@ -105,6 +107,7 @@ I have a few questions about this algorithm and I think it is re-visted in the b
 3. Is there a way to use categorical variables and mix them with continous variables? The idea of distance makes this a bit hard.
 
 ### Lab
+I think I'll just skip this first lab as it looks like just an introduction to R.
 
 ```{r silent, echo = FALSE}
 
@@ -115,4 +118,110 @@ I have a few questions about this algorithm and I think it is re-visted in the b
 ```
 
 ### Exercises
+  
+1. Determine whether a flexible or inflexible method would be preferred in these situations:
+    a. If the sample size is large and the number of predictors is small, a flexible method would be preferred. A larger sample size would lend itself better to flexible non-parametric methods. Having fewer predictors also reduces the risk of overfitting.
+    b. If the sample size is small and the number of predictors is large, we would prefer a less flexible method. Flexible methods are likely to see patterns when none exist in this situation.
+    c. If the relationship between preidctors and responses is highly non-linear we *might* prefer a more flexible method. I think this is probably the answer the authors intend but it depends on what kind of non-linear relationship we're talking about. If it's a relatively simple non-linear pattern, like a quadratic function, then a inflexible method like linear regression with a squared term could work just fine. I think in a lot of non-linear situations we are going to want a more flexible method though.
+    d. If the variance of the error term is extremely high we would probably prefer a less flexible method. A larger irreducible error means that flexible methods will respond to this more acutely and not pick out broader trends.
+2. Categorize these situations as regression or classification and identify $n$ and $p$
+    a. A set of 500 firms ($n$), with three features ($p$), predicting CEO salary (regression).
+    b. Determinining the success or failure (classification) from 13 predictors ($p$) from a sample of 20 ($n$) similar products.
+    c. Predicting the percent change in USA/Euro exchange rate (regression) from 52 weeks of data ($n$) using three ($p$) markets data.
+3. Create a rough sketch of a typical plot of square bias, training error rate, testing error rate, and Bayes error rate vs the flexibility of the model. 
+  
+```{r flex_plot, echo=FALSE, fig.align='center'}
+# Make some data on a 100 point scale with 4 different model flexibilties:
+tibble(
+  flex = 1:4,
+  bias = c(80, 40, 30, 25),
+  training_err = c(55, 30, 20, 10),
+  test_err = c(70, 35, 40, 55),
+  bayes_err = 20
+) %>% 
+  pivot_longer(
+    cols = bias:bayes_err,
+    names_to = 'quantity',
+    values_to = 'value'
+  ) %>% 
+  ggplot(
+    aes(x = flex, y = value, color = quantity)
+  ) +
+  geom_line(size = 2) +
+  theme_minimal()
+```
+  
+The Bayes error is fixed at a particular level when you select $Y$ and $X$ so it is flat. The bias monotonically decreases as bias is due to assumptions about models. These assumptions are peeled away as flexibility increases. Testing error decreases at first as some bias is removed but then increases as the variance of the model goes up. The training error only decreases as models become more tuned to the data set used to create them.
+  
+4. Think of some real life situations to use prediction, inference, and cluster analysis.
+    a. Prediction
+        i. Guessing which patients will need postoperative blood transfusions.
+        ii. Predicting which candidates will be effective after hiring.
+        iii. Trying to screen spam email.
+    b. Inference
+        i. Estimating the association between preoperative anemia and need for postoperative blood transfusions.
+        ii. Determining which factors are highly predictive of effective employees.
+        iii. Finding the important characteristics of a spam email.
+    c. Clustering
+        i. Looking for phenotypes of anemic patients
+        ii. Categorizing employees at a large organization
+        iii. Clustering types of scams.
+  
+5. Cases in which you might want a less flexible method include:
+    * When inference is the goal
+    * When the observed relationship between predictors and responses is relatively simple
+    * When the number of predictors is relatively few or the number of observations is small
+Cases when we might want a more flexible approach:
+    * When the relationship between predictors and response is highly complex/nonlinear
+    * When the number of observations is large
+    * When the goal is not inference
+    
+6. Parametric approaches assume some form of the predictor-response relationship that relies on one or more parameters. The training set is then used to estimate those parameters and predictions are made from the estimated function. Non-parametric approaches do not make such assumptions about the predictor/response relationship. Parametric methods are generally preferred when inference is the goal because it is easier to make quantitative (or even qualitative) statements about the predictor-response relationship. These methods tend to be inflexible and when relationships are complex, non-parametric may be preferred. 
+  
+7. Consider using KNN for a point $X_1 = X_2 = X_3 = 0$ using the training set below:
+  
+```{r knn_setup, echo = FALSE}
+knn_train = tibble(
+  X1 = c(0, 2, 0, 0, -1, 1),
+  X2 = c(3, 0, 1, 1, 0, 1),
+  X3 = c(0, 0, 3, 2, 1, 1),
+  Y = c('red', 'red', 'red', 'green', 'green', 'red')
+)
 
+knn_train %>% 
+  kable(
+    align = 'c', 
+    format = 'html', 
+    escape = TRUE
+  ) %>% 
+  kable_styling(
+    bootstrap_options = "striped", 
+    full_width = FALSE
+  )
+```
+  
+    a. Compute the Euclidean distance from the test point to each point:
+  
+```{r knn_a, echo = FALSE}
+
+  
+knn_train = knn_train %>% 
+  mutate(
+    dist = sqrt(X1^2 + X2^2 + X3^2)
+  )
+
+knn_train %>% 
+  kable(
+    align = 'c', 
+    format = 'html', 
+    escape = TRUE
+  ) %>% 
+  kable_styling(
+    bootstrap_options = "striped", 
+    full_width = FALSE
+  )
+```
+  
+    b. What are the classifications for $K=1$ and $K=3$?
+    For each of these we need to compute $P(Y = green)$. For $K=1$, it's 1 because the closest value is green so we classify it as green. For $K=3$, two of the three closest values a red so $P(Y = green) = \frac{1}{3}$ and we assign red.
+    d. If the Bayes decision boundary for this kind of problem is highly non-linear, then the categories may be clumped in some less clear ways. As a result, we could end up with islands of one category that are far from the rest of their group. As a result, smaller values of $K$ may be preferred.

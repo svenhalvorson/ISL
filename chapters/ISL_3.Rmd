@@ -1,0 +1,157 @@
+---
+title: 'Chapter 3: Linear Regression'
+subtitle: "<span style='font-size: 20px'>Notes from ISL</style>"
+author: 'Sven Halvorson'
+date: "2020-09-25"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('tidyverse')
+```
+
+### Definitions
+<u><span style='font-size: 18px'>3.1</u></style>
+  
+* **Simple linear regression**: A technique where we model the model the output as having a straight line relationship with a single input $(Y\approx\beta_0+\beta_1X)$.
+* **Residual**: The difference between an observed output and the corresponding prediction.
+* **Residual sum of squares (RSS)**: The sum of the squares of all of the residuals for a fit of a linear model.
+* **Standard error (SE)**: An estimate of the standard deviation of a parameter drawn from a sampling distribution.
+* **Residual standard error (RSE)**: A summary measure of the sizes of errors made by a regression model. Given by $RSE = \sqrt{\frac{1}{n-k}\sum_{i=1}^n(y_i-\hat{y_i})^2}$
+* **Correlation between $X$ and $Y$**: A measure of the strength of the linear relationships between two continuous variables. Defined as their covariance divided by the product of their standard deviations.
+
+### Notes
+  
+#### 3.1: Simple linear regression
+  
+Here are the questions (given by the author) that linear regression is commonly used to address:
+  
+1. Is there a relationship between two variables?
+2. If there is, how strong is it?
+3. Which variables have relationships with an output?
+4. How accurately can we estimate the relationships between inputs and outputs?
+5. How accurately can we estimate outputs given inputs?
+6. Is the relationship between inputs and outputs linear?
+7. Is there synergy or disynergy among predictors?
+  
+The most basic regression is called *simple linear regresion* and uses only one predictor:
+  
+$$Y\approx\beta_0+\beta_1X$$
+  
+The betas are parameters often called *coefficients*. This is only the model, however, and when we estimate this relationship from actual data, we label the coefficients with hats to denote this. Here is the prediction for $Y$ given some value of $X=x$:
+  
+$$\hat{Y}\approx\hat\beta_0+\hat\beta_1x$$
+  
+Of course, any actual data set used will not fit a literal linear relationship and as a result there will be deviations from our predictions. If we fit a model and have a particular output, $y_i$, then it's *residual* is:
+  
+$$\epsilon = y_i-\hat{y}$$
+  
+Although there are multiple methods of choosing $\beta_0$ and $\beta_1$, the most common is the method of *least squares*. This means we pick the values for those paramaters that minimize this quantity known as the *residual sum of squares*:
+  
+$$RSS = \sum_{i=1}^n{\epsilon_i^2}$$
+$$RSS = \sum_{i=1}^n{(y_i-\beta_0-\beta_1x_i)^2}$$
+The book has a nice 3D figure of the RSS as the vertical axis with the parameters as the depth and width. It's like a valley where the nadir is the combination of $\beta_0$ and $\beta_1$ that produces the minimal RSS. I think I'll try to reproduce some of the graphs that I like as I go through these notes but 3D takes too long.
+  
+There are nice formulas for $\beta_0$ and $\beta_1$ when there is only one predictor but with more inputs you start needing multivariable calculus and all that nasty partial derivative stuff.
+  
+The estimates for the coefficients are *unbiased* in that if the assumptions of the linear model are achieved, then they will not systematically over or under-estimate the 'true' values. The standard errors of the coefficients are measurements of how variable these estimates would be across various possible samples. If $\sigma^2$ is the variance of $Y$, then these standard errors can be computed as follows:
+  
+  $$SE(\hat\beta_0)^2=\sigma^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i=1}^n(x_i-\bar{x})^2}\right]$$
+  $$SE(\hat\beta_1)^2=\frac{\sigma^2}{\sum_{i=1}^n(x_i-\bar{x})^2}$$
+Let's try to apply some logic to these to understand how they can potentially change. For both standard errors, having less variability in $Y$ will reduce the SE of these estimates. This makes some sense if we think about how these would be interpreted if we simply changed the units of $Y$, the standard errors would change just because of the scale change. For the intercept, we can see that increasing the sample size will make it so the contribution of $\frac{1}{n}$ becomes irrelevant. In both formulas, we see that having more variation in $X$ or more variation relative to it's mean gives us smaller SE. To me this, makes some intuitive sense in that if we have a narrow bandwith for X, the results will be more unstable. It feels like having a wider range gives the data a better ability to develop a linear trend where as a shorter interval of $X$ might look more like a blob. We can do a quick simulation:
+
+```{r se_sim, echo=TRUE}
+
+# make two different data sets and truncate the inputs of one to a smaller range
+set.seed(0)
+df1 = tibble(
+  x = runif(100),
+  y = x + rnorm(100, sd = 0.1)
+)
+
+df2 = tibble(
+  x = runif(500),
+  y = x + rnorm(500, sd = 0.1)
+) %>% 
+  filter(
+    between(x, 0.25, 0.75)
+  ) %>% 
+  sample_n(100)
+  
+# model both and get SE:
+glm(
+  y ~ x,
+  data = df1
+) %>% 
+  broom::tidy()
+
+glm(
+  y ~ x,
+  data = df2
+) %>% 
+  broom::tidy()
+
+
+```
+So that gives us about double standard error for the same sample size on half the interval.
+  
+They give a description of confidence intervals which I find a little off. It's phrased in terms of having 95% probability of containing the true parameter value but this is not true for a particular confidence interval. In any case, they give the 95% confidence intervals as being approximately this:
+
+$$\hat{\beta_i} \pm2\cdot SE(\beta_i)$$
+Then they give a quick description of hypothesis tests and give the *t-statistic* as:
+
+$$t =\frac{\hat\beta_i-\beta_{i, null}}{SE(\beta_i)}$$
+
+Then the proportion of the t-distribution with the appropriate degrees of freedom that is more extreme in absolute value than $t$ is the *p-value*. This is then compared to a pre-specified threshold, generally named and chosen to be $\alpha=0.05$.
+  
+The authors give two measures of model fit which are the *residual standard error (RSE)* and the *coefficient of determination (*$R^2$*)*.
+  
+The RSE is a measure of fit in that it compares the predicted and observed values and then makes an average of sorts. Given $k$ predictors, the RSE should be:
+$$RSE = \sqrt{\frac{1}{n-k}RSS}=\sqrt{\frac{1}{n-k}\sum_{i=1}^n(y_i-\hat{y_i})^2}$$
+This measure of *lack of fit* gives us a way to summarize how far off our predictions were from the observed values. We should qualify what a large or small value of RSE in in terms of $Y$ which is a limitation of this. It can be used effectively though for comparing different models with the same output.
+  
+The other measure of fit given here is $R^2$ which, unlike RSE, does not have units and is defined like this:
+$$R^2 = 1 - \frac{RSS}{TSS}=1-\frac{\sum_{i=1}^n(y_i-\hat{y_i})^2}{\sum_{i=1}^n(y_i-\bar{y_i})^2}$$
+This is essentially saying 'what proportion of the variance is explanable by our predictors?' This is nicely kept from 0 to 1 which makes comparing $R^2$ across vastly different models easy. The authors say that low values can be attributable to either poor model fit and/or high inherant variance in $Y$. I'm not quite sure I understand this second piece. A large value for $\sigma^2$ could still be predicted well assuming that the correlation with $X$ is strong and the range of $X$ is sufficient. If they mean that $Y$ is highly variable across the support then that would mostly just mean that it is not a strong linear relationship and thus we don't have a model that fits well.
+  
+  Finally, they give the definition of *correlation* as:
+  
+  $$Cor(X,Y) = \frac{Cov(X,Y)}{\sigma_x\sigma_y}=\frac{\sum_{i=1}^n(x_i-\hat{x})(y_i-\hat{y})}{\sqrt{\sum_{i=1}^n(x_i-\hat{x})^2\sum_{i=1}^n(y_i-\hat{y})^2}}$$
+This is a measure of the strength of the linear relationship between two continuous variables. There are a number of limitations to this measurement but it is easy to interpret. It's bound between -1 and 1 where values farther from zero indicate a stronger relationship. Positive values indicate a direct relationship and negative indicate an inverse relationship.
+
+#### 3.2: Mulitple linear regression
+
+The concept of simple linear regression is easily expanded to have more than one predictor. There are many motivations to do this but the two given by the authors seem satisfactory to me: create predictions using values of multiple predictors at once and allowing relationships between predictors to play out. A *multiple lineare regression* model with $Y$ as a response and $p$ predictors can bet written as:
+  
+$$Y = \beta_0+\sum_{i=1}^p\beta_iX_i$$
+
+We can interpret each of the $\beta_i$ in the same way as the simple linear model except here we qualify that the change in $Y$ for a one unit change in $X_i$ is qualified on constant values for each other $X_i$. In the case of two predictors, we could think of this as a regression plane (instead of line) but after that the geometry dissolves for most of us. The method of selecting estimates for each $\beta_i$ is also done by minimizing the residual sum of squares however it now requires some more fancy calculus and what not to do so.
+
+The authors also give a brief description of *confounding* here as well without mentioning it by name.
+
+We then move into some of the questions initially posed as motivation to do linear regression the first being 'is there a relationship between the predictors and the response?' To answer this, we use a hypothesis test that asks if at least one of the coefficients is non-zero. The null in that case is:
+$$ H_0:\beta_1 = \beta_2 = ... = \beta_p$$
+And then the alternative is at least one $\beta_i$ non-zero for $i>0$. This hypothesis test is conducted by computing the *F-statistic*:
+  
+$$F=\frac{(TSS-RSS)/p}{RSS/(n-p-1)}$$
+  
+If the assumptions of the linear model are met, then the expected value of the denominator is $\sigma^2$. Under the null, the expected value of the numerator is also $\sigma^2$ so the test boils down to asking if the denominator is smaller than expected under the null aka $F>1$. Intuitively, we can think about the numerator as the average explained squares per predictor. I
+
+
+
+### Lab
+
+```{r silent, echo = FALSE}
+
+```
+
+```{r show_code, echo=FALSE}
+
+```
+
+### Exercises
+

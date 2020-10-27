@@ -2,11 +2,12 @@
 title: 'Chapter 3: Linear Regression'
 subtitle: "<span style='font-size: 20px'>Notes from ISL</style>"
 author: 'Sven Halvorson'
-date: "2020-09-25"
 output:
   html_document:
     toc: yes
-    toc_depth: 4
+    toc_depth: 5
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -20,10 +21,26 @@ library('tidyverse')
 * **Simple linear regression**: A technique where we model the model the output as having a straight line relationship with a single input $(Y\approx\beta_0+\beta_1X)$.
 * **Residual**: The difference between an observed output and the corresponding prediction.
 * **Residual sum of squares (RSS)**: The sum of the squares of all of the residuals for a fit of a linear model.
-* **Standard error (SE)**: An estimate of the standard deviation of a parameter drawn from a sampling distribution.
+* **Standard error (SE)**: An estimate of the standard deviation of a statistic drawn from a sampling distribution.
 * **Residual standard error (RSE)**: A summary measure of the sizes of errors made by a regression model. Given by $RSE = \sqrt{\frac{1}{n-k}\sum_{i=1}^n(y_i-\hat{y_i})^2}$
-* **Correlation between $X$ and $Y$**: A measure of the strength of the linear relationships between two continuous variables. Defined as their covariance divided by the product of their standard deviations.
-
+* **Correlation between $X$ and $Y$**: A measure of the strength of the linear relationships between two continuous variables. Defined as their covariance divided by the product of their standard deviations.  
+  
+<u><span style='font-size: 18px'>3.2</u></style>  
+* **Partial effect**: The impact of a group of predictors on a regression model. Determined by an F-statistic by removing those variables from a model.
+* **Variable selection**: Any process that choooses a set of predictors for a model.
+* **Stepwise selection**: A variable selection method by which variables are added and/or removed from a model by some criteria until a stopping criteria is met.  
+  
+<u><span style='font-size: 18px'>3.3</u></style>  
+* **Dummy variables**: A method of expanding a factor variable into a series of binary variables. Generally if the factor has $k$ levels then we expand to $k-1$ or $k$ dummy variables. These are sometimes called indicator variables in the mathematical context.
+* **Main effects**: Coefficients attached to a single predictors.
+* **Interaction effects**: Coefficients tied to products of two or more predictors.
+* **Heteroscedasticity**: Non-constant variance across the support of a continuous predictor.
+* **Weighted least squares**: A method of estimating the regression parameters by taking each observation to be the average of a number of observations. Used to value observations unequally.
+* **Outlier**: A point with an unusually large/small response given their input values.
+* **High leverage point**: An observation with an unusual combination of predictors. Often influences regression parameter estimates.
+* **Collinearity**: When two or more observations are highly correlated/related.
+* **Variance inflation factor**: A measurement that can be used to detect multicollinearity. Created by constructing a model where a particular predictor is set as the response to all others.
+  
 ### Notes
   
 #### 3.1: Simple linear regression
@@ -62,7 +79,7 @@ The estimates for the coefficients are *unbiased* in that if the assumptions of 
   
   $$SE(\hat\beta_0)^2=\sigma^2\left[\frac{1}{n}+\frac{\bar{x}^2}{\sum_{i=1}^n(x_i-\bar{x})^2}\right]$$
   $$SE(\hat\beta_1)^2=\frac{\sigma^2}{\sum_{i=1}^n(x_i-\bar{x})^2}$$
-Let's try to apply some logic to these to understand how they can potentially change. For both standard errors, having less variability in $Y$ will reduce the SE of these estimates. This makes some sense if we think about how these would be interpreted if we simply changed the units of $Y$, the standard errors would change just because of the scale change. For the intercept, we can see that increasing the sample size will make it so the contribution of $\frac{1}{n}$ becomes irrelevant. In both formulas, we see that having more variation in $X$ or more variation relative to it's mean gives us smaller SE. To me this, makes some intuitive sense in that if we have a narrow bandwith for X, the results will be more unstable. It feels like having a wider range gives the data a better ability to develop a linear trend where as a shorter interval of $X$ might look more like a blob. We can do a quick simulation:
+Let's try to apply some logic to these to understand how they can potentially change. For both standard errors, having less variability in $Y$ will reduce the SE of these estimates. This makes some sense if we think about how these would be interpreted if we simply changed the units of $Y$, the standard errors would change just because of the scale change. For the intercept, we can see that increasing the sample size will make it so the contribution of $\frac{1}{n}$ becomes irrelevant. In both formulas, we see that having more variation in $X$ or more variation relative to it's mean gives us smaller SE. To me this, makes some intuitive sense in that if we have a narrow bandwith for $X$, the results will be more unstable. It feels like having a wider range gives the data a better ability to develop a linear trend where as a shorter interval of $X$ might look more like a blob. We can do a quick simulation:
 
 ```{r se_sim, echo=TRUE}
 
@@ -116,7 +133,7 @@ This measure of *lack of fit* gives us a way to summarize how far off our predic
   
 The other measure of fit given here is $R^2$ which, unlike RSE, does not have units and is defined like this:
 $$R^2 = 1 - \frac{RSS}{TSS}=1-\frac{\sum_{i=1}^n(y_i-\hat{y_i})^2}{\sum_{i=1}^n(y_i-\bar{y_i})^2}$$
-This is essentially saying 'what proportion of the variance is explanable by our predictors?' This is nicely kept from 0 to 1 which makes comparing $R^2$ across vastly different models easy. The authors say that low values can be attributable to either poor model fit and/or high inherant variance in $Y$. I'm not quite sure I understand this second piece. A large value for $\sigma^2$ could still be predicted well assuming that the correlation with $X$ is strong and the range of $X$ is sufficient. If they mean that $Y$ is highly variable across the support then that would mostly just mean that it is not a strong linear relationship and thus we don't have a model that fits well.
+This is essentially saying 'what proportion of the variance is explanable by our predictors?' This is nicely kept from 0 to 1 which makes comparing $R^2$ across vastly different models easy. The authors say that low values can be attributable to either poor model fit and/or high inherant variance in $Y$. I'm not quite sure I understand this second piece. A large value for $\sigma^2$ could still be predicted well assuming that the correlation with $X$ is strong and the range of $X$ is sufficient. Perhaps they mean that relative to it's mean that $Y$ is highly variable. This would indicate a non-linear trend and thus lack of fit.
   
   Finally, they give the definition of *correlation* as:
   
@@ -125,7 +142,7 @@ This is a measure of the strength of the linear relationship between two continu
 
 #### 3.2: Mulitple linear regression
 
-The concept of simple linear regression is easily expanded to have more than one predictor. There are many motivations to do this but the two given by the authors seem satisfactory to me: create predictions using values of multiple predictors at once and allowing relationships between predictors to play out. A *multiple lineare regression* model with $Y$ as a response and $p$ predictors can bet written as:
+The concept of simple linear regression is easily expanded to have more than one predictor. There are many motivations to do this but the two given by the authors seem satisfactory to me: create predictions using values of multiple predictors at once and allowing relationships between predictors to play out. A *multiple linear regression* model with $Y$ as a response and $p$ predictors can bet written as:
   
 $$Y = \beta_0+\sum_{i=1}^p\beta_iX_i$$
 
@@ -135,23 +152,964 @@ The authors also give a brief description of *confounding* here as well without 
 
 We then move into some of the questions initially posed as motivation to do linear regression the first being 'is there a relationship between the predictors and the response?' To answer this, we use a hypothesis test that asks if at least one of the coefficients is non-zero. The null in that case is:
 $$ H_0:\beta_1 = \beta_2 = ... = \beta_p$$
-And then the alternative is at least one $\beta_i$ non-zero for $i>0$. This hypothesis test is conducted by computing the *F-statistic*:
+And then the alternative is at least one $\beta_i$ non-zero for $0<i\leq p$. This hypothesis test is conducted by computing the *F-statistic*:
   
 $$F=\frac{(TSS-RSS)/p}{RSS/(n-p-1)}$$
   
-If the assumptions of the linear model are met, then the expected value of the denominator is $\sigma^2$. Under the null, the expected value of the numerator is also $\sigma^2$ so the test boils down to asking if the denominator is smaller than expected under the null aka $F>1$. Intuitively, we can think about the numerator as the average explained squares per predictor. I
+If the assumptions of the linear model are met, then the expected value of the denominator is $\sigma^2$. Under the null, the expected value of the numerator is also $\sigma^2$ so the test boils down to asking if the denominator is smaller than expected under the null aka $F>1$. Intuitively, we can think about the numerator as the average explained squares per predictor. The denominator is the unexplained sum of squares per observation minus the necessary lost observations due to estimating the model parameters.
+  
+As a refresher, the F-statistic can be thought of as a comparison of variances. The intuition behind this is that if $Y$ is a chi-squared random variable then
 
+$$Y\sim\chi_{k}^2\rightarrow Y=\sum_{i=1}^kX_{i}^2$$
+Where the $X_i$ are iid standard normals. This is very similar to a variance of any RV if we think about centering about its mean and scaling the standard deviation. If we take two chi-squared variables, divide by their degrees of freedom, and take their ratio, we'll end up with an F-distribution:
 
+$$X_1\sim\chi_{j}^2 \wedge X_k\sim\chi_{k}^2\rightarrow\frac{X_1/j}{X_2/k}\sim F_{j,k}$$
+Here we can think of the observations as being the the individual normal distributions that make up the two chi-squares, $X_1$ and $X_2$. Then we compute their variances and take a ratio. If the variances of the two different processes are equal this ratio will be 1. To test the hypothesis $H_0:Var(X_1)=Var(X_2)$, we can compute the F-statistic and then compare to a critical value on the F-distribution. In the regression context, we're essentially doing the same thing. It's a comparison of how much better our regression model performs (numerator/ESS) vs. how much variation is still left after performing the regression (denominator/RSS). The authors point out that the relationship between the p-value of an F-statistic and the p-values of the predictors in the model is not direct. They give an example where the null hypothesis is true (all $\beta = 0$) but we have a large number of predictors. In this case we're likely to make a number of type 1 errors despite no variables being truly associated with the response.
+  
+Sometimes we may choose to perform this kind of F-test when we wish to see if a particular set of say $q$ coefficients are collectively non-zero. This hypothesis test is essentially:
+  
+$$H_0:\beta_{k-q+1}=\beta_{k-q}=...=\beta_q$$
+Then the F-statistic is computed by fitting the model with all of the predictors as well as the model without these $q$ predictors and comparing the reduction in RSS to the RSS in the full model. If RSS$_0$ is the RSS from the model without the $q$ predictors in question then:
+
+$$F=\frac{(RSS-RSS_0)/q}{RSS/(n-p-1)}$$
+This kinda like saying 'what if we didn't include those $q$ predictors?' Would you be sorry since your RSS is much larger with their omission? These are sometimes called the *partial effect* of adding those $q$ predictors. I see this most often when we're considering categorical variables and interaction terms where we want to consider a number of levels of a predictor as a whole.
+  
+After determining that you have at least one predictor worth using, we might want to know if there are any worth discarding or others we didn't use that actively help. The process of selecting a set of predictors is called *variable selection*. With $p$ predictors, there are a total of $2^p$ possible models that can be made so trying them all is not feasible. Instead, there are various algorithms and metrics that can be used to choose an 'optimal' selection of predictors. The authors assure us that we'll return to this but here just introduce three general stepwise techniques:  
+  
+* **Forward selection** starts with a model with no predictors and adds the predictor that reduces the RSS by the largest amount. This process is repeated until some stopping criteria is met. This is a greedy algorithm and as a result may include redundant variables that could be replaced by synergies of other variables.  
+* **Backward selection** starts with all of the possible predictors and then sequentially removes the one that has the largest p-value until all variables have a p-value under a pre-specified threshold. This cannot be performed when $n < p$ but I suspect this is rarely a problem in practice.  
+* **Mixed selection** is a combination of the previous two. We start with no predictors and add them to the model by some criteria like largest decrease to RSS. If at any step, the p-value of a variable rises beyond a particular level, we then remove that until all p-values are under a certain level and variables not included would have a large p-value if not in the model. The authors claim this fixes some of the issues of forward selection by removing variables that initially seem strong but are weaker in the presence of other variables.  
+  
+These methods always made me think of some kind of regression cage match where the predictors have to fight for their right to join or stay in a model.
+  
+The final consideration given is about predictions. We are again reminded that there is an idea of a population plane which would be the set of coefficients that have the smallest sum of square errors for the entire set of possible measurements. The degree to which any estimate of this plane is off is reducible error that more data and better formulations of the model could reduce. The degree to which a multiple regression estimate misrepresents the true phenomena is the model bias. Even if the true $f$ was close to linear, we would still make errors in our predictions due to the exact sample that we have. As a result, we generally compute confidence intervals about $\hat{Y}$ to represent our uncertanty
+
+#### 3.3: Other considerations in the regression model
+
+The final set of points made here are mostly about ways in which multiple regression can be extended to fit other circumstances and the ways in which it can fail/flail. 
+
+The first consideration is how to incorporate factor variables into a regression model. This is generally done but *dummy variables*; a process where we convert factors into a series of binary variables. There are several flavors of this but the most common is to choose one as a reference category and compare each other to that. If we had the variable $X$ as either treatment  or control then we can make a new variable $X'$ as:
+$$
+X'=
+\begin{cases}
+0, & x_i = \text{control} \\
+1, & x_i = \text{treatment}
+\end{cases}
+$$
+In this case the estimated $\beta$ for $X$ is the change in outcome when we change from control to treatment. This is nice when there is an obvious comparison we want to make. Alternatively, we can make the intercept the global mean and then have the dummies coded to be deviations from this mean:
+
+$$
+X'=
+\begin{cases}
+-1, & x_i = \text{control} \\
+1, & x_i = \text{treatment}
+\end{cases}
+$$
+I don't really like this system as much but it has its uses. When we go to more than two levels then we start to need more dummy variables. The reference category schema extends to needing one fewer dummy than levels in the categorical variable. If we had two treatments, say A and B, then we could make these dummies:
+$$
+X_1'=
+\begin{cases}
+0, & x_i = \text{control} \\
+1, & x_i = \text{treatment A}
+\end{cases}
+$$
+$$
+X_2'=
+\begin{cases}
+0, & x_i = \text{control} \\
+1, & x_i = \text{treatment B}
+\end{cases}
+$$
+In addition to using categorical predictors, we can also relax the *additive assumption*. This means that we're no longer restricting ourselves to only computing a weighted average of each factor. Instead, we can add what's known as an *interaction term* which is the product of two or more factors:
+
+$$Y = \beta_0 + \beta_1X_1 + \beta_2X_2 + \beta_3X_1X_2 + \epsilon$$
+The interpretation of $\beta_3$ is the additional effect of $X_1$ and $X_2$ beyond their isolated effect. Interpreting it more precisely depends a bit on whether each of the other predictors are continuous ore categorical.  
+  
+* When both are binary, $\beta_3$ is the added 'bonus' of when $X_1=X_2=1$  
+* When one is binary and the other is continuous, $\beta_3$ is the change in slope between the two lines formed by the continuous predictor and each level of the binary. It allows for the relationship between a continuous predictor and the outcome to vary across levels of a categorical variable.  
+* When both are continuous and we increase the value of one predictor by 1 unit, this will change Y by an amount that depends on the value of the other predictor. In this case, the surface created by the regression model feels a little less 'linear' in the sense that it's not flat anymore.  
+  
+These types of terms are especially helpful when we think that there may be synergy or antagonism between the variables. It's also used in situations where we may want to test the effect of a variable across several subgroups. The authors give the *hierarchical principle* which suggests that whenever interactions are found useful, their main effects should also be left in the model regardless of their independent power to predict $Y$.
+  
+Another extension of a multiple linear regression model is *polynomial* regression where we powers of variables to account for nonlinear relationships between predictors and responses. An example of this might to do a quadratic regression like this:
+
+$$Y = \beta_0 + \beta_1X +\beta_2X^2$$
+In this form, a one unit change in $X$ does not linearly change $Y$. Instead, the exact amount that $Y$ changes by is dependent on the actual value that $X$ changes from. As a result, interpreting these models is more challenging but they can fit the data better. In my experience, it seems very rare that you will want to have more than a cubic term in these models. Adding too many polynomial terms seriously risks overfitting the data. I also think if you're trying to get some visual feel of the trend something like a loess smoother will do the job better.
+
+The last portion of this chapter is just about some problems that you can encounter when using linear regression. One is that if we try to model the wrong shape of association, then we will encounter additional bias. For example, using only additive terms will not work out very well if the relationship between a continuous predictor and outcome is more like a U shape. In this case, residual plots can detect this problem. A possible solution includes adding powers/logs/roots of predictors to accomodate the non-linearity.
+  
+Another issue is that the error terms are sometimes correlated. The most common association is that that the sign or magnitude of $\epsilon_i$ has some relationship with the sign of $\epsilon_{i+1}$. Common examples of this are trends through time where the previous day's measurement is indicative of today's measurement. This is sometimes called *tracking*. In truth, it doesn't have to just be a relationship between 'adjacent' values. Correlation between errors can be broader and more strange in its manifestations. 
+  
+The principle consequence of *correlated data* is that the standard errors are too small and thus the predictions will appear overly confident. A way to think of this is that we essentially have less data than we would if the observations were independent. The example given is that if you just duplicated your data set it will shrink all of your confidence intervals but there is not actually any more data to support this. There are a number of methods to mitigate this problem such as random terms.
+  `
+Another potential problem is non-constant variance of the response across levels/ranges of the predictors. This is a problem because the assumptions of how confidence intervals are created depend on this. It can be detected through residual plots where a funnel shape may emerge (although other patterns can be indicative of this problem). An example of this might be if you were modeling the sales of stores as a function of the area of their building we might find this pattern. A large store can have bigger fluctuations in its sales since they can potentially accommodate more customers. Conversely, a small shop may be constrained by their building and thus sell approximately the same amount regardless of other trends.  The problem of *heteroscedasticity* (wild word) can be mitigated by transformations that unevenly change the values of observations such as logs. Another method which I had not heard of is weighting observations by the inverse of the variance for that level of predictor.
+
+Two similar problems that can ocurr are *outliers* and *high leverage points*. Both of these refer to particular observations in the data set that have some unusually large influence on either the parameter estimates or model fit. The difference between these two ideas was a bit confusing for me when I first saw them but the book does a great job of illustrating how a high leverage point is a special kind of outlier (my words). Outliers have the feature that they are very dissimilar to the rest of the points in either the value of one of their predictors or the outcome value. While they often don't affect the regression estimates that much, outliers can dramatically affect the measures of model fit such as MSE and $R^2$. My personal preference is to leave outliers in the model unless there is good evidence that they are recording errors.
+  
+High leverage points, on the other hand, don't have extreme values in the response for their inputs. Instead, they either have extreme values for the predictor(s). The authors give a very nice example here of how certain combinations of variables that don't follow the overall trend can be high leverage points even if none of the predictor values are extreme in themselves. Unlike outliers, high leverage points can have a dramatic inpact on the regression parameters. As a result, they are more troublesome. A measure of this is the leverage statistic. For simple linear regression, the $i^th$ observation's leverage statistic is:
+
+$$h_i=\frac{1}{n}+\frac{(x_i-\bar{x})^2}{\sum_{i'=0}^n(x_{i'}-\bar{x})^2}$$
+It's not clear here but I believe that the $i'$ here is re-indexing the data set to exclude the $i^th$ observation. So this formula is kinda like the fraction of the total sum of squares that the $i^th$ observation represents. We're told that this is bounded between $\frac{1}{n}$ and 1, that the average leverage is $\frac{p+1}{n}$.
+  
+The last issue discussed is *collinearity* which is an issue surrounding relationships between predictors. They give an excellent example plot here that shows how the coefficient estimates for two parameters can be highly sensitive to the changing data if they are highly correlated themselves. Let's see if we can do a little simulation here to prove this point:
+
+```{r colinearity_sim, echo=TRUE}
+
+# first make two variables that are reasonably well correlated
+# as our response and primary predictor:
+set.seed(0)
+population_table = tibble(
+  X1 = runif(n = 1000),
+  Y = X1 + rnorm(n = 1000, sd = 0.3)
+)
+
+# Now add in two potential covariates, one correlated with
+# Y only and one correlated with both X1 and Y
+population_table = population_table %>% 
+  mutate(
+    X2 = 0.25*Y + rnorm(n = 1000, sd = 0.3),
+    X3 = 0.25*Y + rnorm(n = 1000, sd = 0.3) + X1,
+    across(
+      everything(),
+      function(x){(x-min(x))/(max(x)-min(x))}
+    )
+  ) %>% 
+  relocate(Y)
+
+cor(population_table)
+
+# so we have some moderate orrelation between X1 & X2 and a stronger relationship
+# with X1 & X3
+
+# Sample repeatedly:
+sample_params = function(irrelevant){
+  
+  samp = population_table %>% 
+    sample_n(size = 100)
+  
+  mod1 = glm(
+    formula = Y ~ X1 + X2,
+    data = samp,
+    family = 'gaussian'
+  )
+  
+  mod2 = glm(
+    formula = Y ~ X1 + X3,
+    data = samp,
+    family = 'gaussian'
+  )
+  
+  tibble(
+    X1_1 = coefficients(mod1)[2],
+    X2 = coefficients(mod1)[3],
+    X1_2 = coefficients(mod2)[2],
+    X3 = coefficients(mod2)[3]
+  )
+  
+}
+
+samples = (1:100) %>% 
+  lapply(sample_params) %>% 
+  bind_rows()
+
+# univariate population values for comparison:
+make_uni = function(x){
+  
+  coef = glm(
+    as.formula(paste0('Y + ', x)),
+    data = population_table,
+    family = 'gaussian'
+  ) %>% 
+    coefficients()
+  
+  tibble(
+    var = x,
+    estimate = coefficients(coef)[2]
+  )
+
+}
+
+population_param = glm(
+  formula = Y ~ X1,
+  data = population_table,
+  family = 'gaussian'
+) %>% 
+  coefficients() %>% 
+  .[[2]]
+
+samples %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = 'var',
+    values_to = 'estimate'
+  ) %>% 
+  ggplot(
+    aes(x = var, y = estimate, fill = var)
+  ) +
+  geom_boxplot() +
+  geom_point(
+    data = tibble(
+      var = c('X1_1', 'X1_2'),
+      estimate = population_param 
+    ),
+    color = 'red',
+    size = 2
+  ) +
+  theme_classic() +
+  theme(legend.position = 'none')
+
+var(samples$X1_1)
+var(samples$X1_2)
+```
+
+The fact that the estimates for X1_1 are closer to the univariate estimate is not the point here but we can see that the width of the boxplot for X1_2 is a bit larger than for X1_1. The variences of estimates are a fair bit different as well.
+
+A couple additional notes on collinearity are given. First, because it increases the uncertainty of estimates for our regression estimates, the standard errors of those correlated variables will be larger. As a result, our statistical power decreases. 
+  
+Secondly, there are a few ways to try and detect collinearity. We can look at correlation matrices but as the authors note, sometimes problems occur through relationships of more than two variables (*multicollinearity*). Another method is to look at the *variance inflation factor* (VIF) for each variable. To compute the variance inflation factor for a predictor $X_j$, set it as the response in a model with all the other predictors. Then the $R^2$ from this model is used in this formula:
+$$VIF(\hat{\beta_j}) = \frac{1}{1-R_{X_j|X_{-j}}^2}$$
+So basically the more that the other predictors can predict $X_j$, the smaller the denominator is and thus the larger $VIF(\hat{\beta_j})$ is. Often thresholds of 5 or 10 are given which would correspond to an $R^2$ of 0.8 or 0.9. This seems a bit high to me but my personal experience is that we often want to throw in a bunch of other variables. Maybe these thresholds are just here to identify the most extreme multicollinearity. The simulation I previously did does not fit either of these thresholds.
+
+### 3.5 Comparing linear regression with k-nearest neighbors
+
+A simple modification can be made to the k-nearest neighbors alogrithm for classification discussed in chapter 2 in order to handle the case of a continuous outcome. Given an observation we want to predict, $x_0$, the KNN regression selects the K nearest values to $x_0$ (by some metric) and puts them into a set $\mathcal{N}_0$. Then we average the responses of all the observations in $\mathcal{N}_0$:
+
+$$\text{KNN regression estimate} = \hat{f}(x_0)=\frac{1}{K}\sum_{x_i\in\mathcal{N}_0}y_i$$
+
+I am not quite sure about the history of this but I suspect this was invented later than linear regression. It seems substantially more intuitive as you're just saying 'let's just average all the closest observations to $x_0$!' The book visualizes this as some kind of 3D step function where there are a bunch of shelves like Q-bert. The steps get smaller as K gets larger as a small change in $x_0$ is more likely to change $\mathcal{N}_0$ if we draw on a greater number of points. Personally, I had envisioned this more like soap bubbles (Bayes decision boundary) where each bubble determines the set of inputs that are mapped to the same prediction. I'm sure they get into this a bit later but it seems difficult to choose K for these algorithms which seems like an analogous problem to selecting variables for multiple linear regression.
+  
+The two major points of comparison they make when comparing linear and KNN regression: considerations about the linearity of $f$ and issues surrounding the number of predictors. In the case that the true predictor response is roughly linear, linear regression generally performs better. This is because there is very little to be gained from the low bias in the KNN regression. The variance of the more flexible KNN method can cause overfitting that is not helpful in the case of a roughly linear $f$. On the other hand, when there start to be larger deviations from linearity, KNN starts to perform better, especially when a good choice of K is made. Even with some modifications, such as polynomial terms, linear regression will fail to accommodate many non-linear scenarios. 
+  
+The second consideration is the number of predictors used. Assuming we have a reasonable observation to predictor ratio, linear regression performs fine if we throw in a bunch of irrelevant predictors. Sure, they eat up some degrees of freedom but this doesn't really make our predictions that much worse since irrelevant predictors get small coefficients and thus don't affect the predictions much. Conversely, adding a lot of nonsense variables to a KNN regression model will weaken the model. This is because it does not give any preference to particular variables in terms of selecting $\mathcal{N}_0$. We can imagine having 19 very weak predictors and 1 strong predictor but if we compute Euclidean distances, the 1 good predictor just gets an equal share in that calculation. This issue is called the *curse of dimensionality* where we're overwhelmed by the number of predictors and lose accuracy as a result.
+  
+Lastly, they mention that the interpretability of linear regression is much higher. I know that the focus of this book is not on inference but for me, this is the biggest reason to use linear regression.
 
 ### Lab
 
-```{r silent, echo = FALSE}
+I haven't decided exactly what I want to do for the labs but I think I might just follow along and leave some code visible when it seems particularly important.
+  
+These exercises use the data set `Boston` from the `MASS` library. It looks like I know most all of this but here is just in case:
+
+```{r lab1, echo = TRUE, message=FALSE}
+library('MASS')
+library('ISLR')
+data(Boston)
+
+# Create a linear model predicting home values as a function of 'lower status' (not clear what that is)
+mod1 = lm(
+  formula = medv ~ lstat,
+  data = Boston,
+  family = 'gaussian'
+)
+
+# Take a peek:
+summary(mod1)
+
+# Given that there's only one predictor, the R^2 is relatively large.
+# We have a singificant F-stat (and thus Beta)
+
+# Can compute confidence intervals for the coefficients:
+confint(mod1)
+
+# Confidence intervals:
+predict(
+  object = mod1,
+  tibble(lstat = (1:3)*5),
+  interval = 'confidence'
+) %>% 
+  bind_cols(
+    tibble(lstat = (1:3)*5)
+  )
+
+# Prediction intervals:
+predict(
+  object = mod1,
+  tibble(lstat = (1:3)*5),
+  interval = 'prediction'
+) %>% 
+  bind_cols(
+    tibble(lstat = (1:3)*5)
+  )
+
+# Plot it:
+with(Boston, plot(lstat, medv))
+abline(mod1)
+
+# not a horrible fit but perhaps we could use a square term of lstat
+
+# Diagnosticc plots:
+par(mfrow = c(2,2))
+plot(mod1)
+
+# The fit is not very good for low values of lstat. We see some deviations in 
+# normality of the residuals but hot horrible. Some of the first points might
+# be called outliers. A few high leverage points althoug.
+
+# Move on to a model using all the predictors:
+mod2 = lm(
+  formula = medv ~ .,
+  data = Boston
+)
+
+summary(mod2)
+
+# Can compare the RSE of the two models:
+summary(mod1)$sigma
+summary(mod2)$sigma
+
+# could look at the correlation matrix but this is a large number of predictors
+# so perhaps we can compute the VIFs:
+car::vif(mod2) %>% as_tibble(rownames = 'var')
+
+# largest one is tax which could be large enough to remove if it's not a predictor
+# of interest. Update to remove it
+mod3 = update(mod2, ~.-tax)
+# i'm not super familiar with some of the formula syntax so this was a bit nice
+# to see. I usually just make tables of all the formulas I want and then shove them
+# through glm()
+
+# Perhaps we believe that low status has a different effect on housing prices
+# for blacks and whites. Fit an interaction mode:
+int_mod = lm(
+  formula = medv ~ lstat*black,
+  data = Boston
+)
+summary(int_mod)
+# Quite unusual to see this strong of an interaction but I've been told that
+# Boston is the most racist city in the US.
+# So we're seeing that as you become poorer, the housing price goes down
+# The formula used to compute black looks like it's some kind of square deviation
+# from the mean proportion of Boston that is black (probably) so as black becomes 
+# greater, it means that the neighborhood is more racially homogeneous (not necessarily more black==
+# When we see a negative value for lstat:black, that's saying that as we move to more
+# poor neighborhoods, those that are racially homogenous have their housing price
+# drop more rapidly
+
+
+ggplot(
+  data = Boston,
+  aes(x = lstat, y = medv, color = black)
+) +
+  geom_point() +
+  theme_classic()
+
+
+```
+
+```{r lab2, echo = FALSE, message=FALSE}
+
+# Not super easy to tell by the color since the distribution of black is very skewed 
+
+# Next we got a polynomial model where we're going to do what 
+# I suggested earlier and add a square of lstat
+quadratic_mod = lm(
+  medv ~ lstat + I(lstat^2),
+  data = Boston
+)
+
+# I basically never do these transformations in the formulas but perhaps I
+# should to save some lines.
+summary(quadratic_mod)
+
+# Looks like it improved the fit quite a bit:                 
+anova(mod1, quadratic_mod)
+# Cut the RSS by about 25%, strong evidence that this is needed.
+par(mfrow = c(2,2))
+plot(quadratic_mod)
+# Still have some high leverage points but overall pretty good
+
+# I didn't know you can do this:
+quintic_mod = lm(
+  medv ~ poly(lstat, degree = 5),
+  data = Boston
+)
+summary(quintic_mod)
+anova(quadratic_mod, quintic_mod)
+
+# Seems like if you're going to go this far, might just use KNN
+
+# Quick example of qualitative predictors:
+qual_mod = lm(
+  Sales ~ . + Income:Advertising + Price:Age,
+  data = ISLR::Carseats
+)
 
 ```
 
 ```{r show_code, echo=FALSE}
 
+
+
 ```
 
 ### Exercises
 
+#### 1 
+The hypotheses for the tests in table 3.4 are that the slopes between predictors and sales are non-zero and that the intercept is non-zero. From this we would conclude that even if you do not advertise at all, you will make some sales (intercept $\neq$0), that increasing TV sales by 1 unit will increase sales by 0.046 units.  
+#### 2 
+From what I can garner, there are two main differences between the KNN classifier and KNN regression. The first is simply that one deals with a categorical response and the other a continuous. The second difference is that the classifier takes the most common value among the neighbors and the regression takes the mean response of those neighbors.  
+#### 3 
+Suppose we have a regression estimate like this:
+
+$$\text{Salary} = 50+20\cdot\text{GPA}+0.07\cdot\text{IQ}+35\cdot\text{Female}+0.01\cdot\text{GPA}\cdot\text{IQ}-10\cdot\text{GPA}\cdot\text{Female}$$
+The multiple choice answer is correct is that for a fixed IQ and GPA, males earn more than females provided the GPA is high enough. The reason for this is that the GPA slope is 20 for males and 10 for females but females start 35 above males. Eventually these lines will cross and males will earn more. The predicted salary of a female with a 4.0 GPA and 110 IQ would be :
+
+$$\text{Salary} = 50+20\cdot4+0.07\cdot110+35\cdot1+0.01\cdot4\cdot110-10\cdot4\cdot1=137,100$$
+We're also asked about the fact that the GPA*IQ term is very small and whether or not that is evidence of an interaction effect. The answer to this is no. The size of the coefficient does not tell you anything about whether or not there is strong evidence for an interaction. If the confidence interval is very small, then we could conclude there is an interaction even if the coefficient is small.  
+#### 4 
+Suppose we have a data set of 100 observations and a single predictor where we fit a model like this:
+$$Y=\beta_0+\beta_1X_1+\beta_2X_1^2+\beta_3X_1^3+\epsilon$$
+a. We're asked about the training RSS of this model versus one that has no polynomial terms assuming that the true $f$ is linear. I believe that the full model should have a lower RSS because although the relationship is linear, there are going to be perturbations just due to chance. The more flexible model with quadratic and cubic terms will be able to hug the data more closely. That being said, we would expect the testing RSS to be lower for the model with only the first degree terms because the polynomial model will likely overfit the data. Let's try it:
+
+```{r poly_sim, echo=TRUE}
+set.seed(-1)
+# Think I'll just use the data we already made:
+poly_sample = population_table %>% 
+  sample_n(100)
+
+lin_mod = glm(
+  Y ~ X1,
+  data = poly_sample
+)
+lin_mod$deviance
+
+poly_mod = glm(
+  Y ~ poly(X1, degree = 3),
+  data = poly_sample
+)
+poly_mod$deviance
+
+# So thats what I expected but what about testing on another sample
+poly_sample2 = population_table %>% 
+  sample_n(100)
+
+poly_sample2$lin_predict = predict(
+  lin_mod,
+  data = poly_sample2
+)
+
+poly_sample2$poly_predict = predict(
+  poly_mod,
+  data = poly_sample2
+)
+
+poly_sample2 %>% 
+  mutate(
+    RS_lin = (lin_predict-Y)^2,
+    RS_poly = (poly_predict-Y)^2
+  ) %>% 
+  summarize(
+    RSS_lin = sum(RS_lin),
+    RSS_poly = sum(RS_poly)
+  )
+
+```
+
+So I tried this a few times and it seems like usually the polynomial model does a little worse in training but not always. Maybe I'll check this with someone else's solutions but I think my logic is sound. The polynomial functions is frequently going to overfit the data and cause the training RSS to be lower than for the linear model.
+  
+We're then asked about how this situation would differ if the true relationship is non-linear. I suspect that there are some non-linear relationships that could exist where a linear function would outperform a cubic one but I suspect most 'smooth' relationships between $X$ and $Y$ would have lower training and test RSS with the cubic. Can try this as well:
+
+```{r poly_sim2, echo=TRUE}
+set.seed(-1)
+# Think I'll just use the data we already made:
+population_table = population_table %>% 
+  mutate(X4 = exp(Y))
+
+poly_sample3 = population_table %>% 
+  sample_n(100)
+
+lin_mod2 = glm(
+  Y ~ X4,
+  data = poly_sample3
+)
+lin_mod$deviance
+
+poly_mod2 = glm(
+  Y ~ poly(X4, degree = 3),
+  data = poly_sample3
+)
+poly_mod2$deviance
+
+# This is not even closer
+
+poly_sample4 = population_table %>% 
+  sample_n(100)
+
+poly_sample3$lin_predict = predict(
+  lin_mod,
+  data = poly_sample4
+)
+
+poly_sample3$poly_predict = predict(
+  poly_mod,
+  data = poly_sample4
+)
+
+poly_sample3 %>% 
+  mutate(
+    RS_lin = (lin_predict-Y)^2,
+    RS_poly = (poly_predict-Y)^2
+  ) %>% 
+  summarize(
+    RSS_lin = sum(RS_lin),
+    RSS_poly = sum(RS_poly)
+  )
+
+# does better in testing as well
+
+```
+#### 5 
+Suppose the fitted values of a linear regression without an intercept look like this:
+
+$$\hat{y_i}=\hat{\beta_0}x_i$$
+Where
+$$\hat{\beta_0}=(\sum_{j=1}^nx_jy_j)/(\sum_{k=1}^nx_{k}^2)$$
+
+Show that we can write:
+$$\hat{y_i}=\sum_{j=1}^na_jy_j$$
+
+What is $a_i$?
+
+Well this is an awkwardly worded question but I'm guessing we can just substitute in the expanded definition of $\hat{\beta_0}$:
+$$\hat{y_i}=\frac{x_i(\sum_{j=1}^nx_jy_j)}{\sum_{k=1}^nx_{k}^2}$$
+I guess we can just bring the other pieces inside the sum indexed by j since they're constants:
+$$\hat{y_i}=\sum_{j=1}^n(x_jx_i\frac{1}{\sum_{k=1}^nx_{k}^2}y_i)$$
+So
+
+$$a_j=x_jx_i\frac{1}{\sum_{k=1}^nx_{k}^2}$$
+Not entirely sure why this is relevant but okay. I mean linear combinations are cool and all but... I don't see it yet.
+
+#### 6 
+Provide an argument why simple linear regression always passes through the point $(\bar{x},\bar{y})$.
+
+I think there are multiple ways to do this but I think I'll try to compute the slope between $(\bar{x},\bar{y})$ and $(0,\hat{\beta_0})$.
+
+$$m=\frac{\bar{y}-\hat{\beta_0}}{\bar{x}-0} = \frac{\bar{y}-(\bar{y} -\hat{\beta_1}\bar{x})}{\hat{x}-0} = \hat{\beta_1}$$
+
+So the slope between this point and a known point on the regression line is the estimated regression slope, therefore $(\bar{x},\bar{y})$ is on the line.
+
+
+#### 7 
+Assume that $\bar{x}=\bar{y}=0$ for a simple linear regression model. Show that $R^2=r^2$.
+
+Just so I know where I'm going, this is probably where we want to end up:
+
+$$R^2=\frac{TSS-RSS}{TSS}=\frac{\sum_{i=0}^n(y_i-\bar{y})^2-\sum_{i=0}^n(y_i-\hat{y_i})^2}{\sum_{i=0}^n(y_i-\hat{y_i})^2}=\frac{\sum_{i=0}^ny_i^2-\sum_{i=0}^n(y_i-\hat{y_i})^2}{\sum_{i=0}^n(y_i-\hat{y_i})^2}$$
+
+Inserting in the estimates from linear regression:
+$$R^2=\frac{\sum_{i=0}^ny_i^2-\sum_{i=0}^n(y_i-x_i\frac{\sum_{i-0}^nx_iy_i}{\sum_{i=1}^nx_i^2})^2}{\sum_{i=0}^n(y_i-x_i\frac{\sum_{i-0}^nx_iy_i}{\sum_{i=1}^nx_i^2})^2}$$
+
+
+So if we take the correlation and square it we get this:
+$$r^2=\frac{(\sum_{i=0}^n(x_i-\bar{x})(y_i-\bar{y}))^2}{\sum_{i=0}^n(x_i-\bar{x})^2\sum_{i=0}^n(y_i-\bar{y})^2}$$
+
+Eh.... not sure if this is the best use of my time... Maybe will fill it out later.
+
+#### 8 
+We're asked to make a linear model, comment on it, plot it and also the residuals.
+
+```{r q8, echo=TRUE}
+
+q8_mod = lm(
+  mpg ~ horsepower,
+  data = Auto
+)
+summary(q8_mod)
+
+# So horsepower is a strong predictor for mpg. We have a large R^2 given only one
+# predictor. The relationship is negative so higher horsepower means worse mileage.
+predict(
+  q8_mod,
+  newdata = tibble(horsepower = 98),
+  interval = 'prediction'
+)
+par(mfrow = c(1,1))
+plot(Auto$horsepower, Auto$mpg)
+abline(q8_mod)
+
+par(mfrow = c(2,2))
+plot(q8_mod)
+
+# Diagnostic plots are nnmot awful. The residuals look normal.
+# There is a bit of heterogeneity of variance 
+```
+
+#### 9 
+Question about multiple regression on this same data set:
+```{r q9, echo=TRUE}
+
+par(mfrow = c(1,1))
+plot(Auto)
+# See some nice relationships between the aspects of the engine/performance
+
+cor(dplyr::select(Auto, -name))
+
+q9_mod = lm(
+  mpg ~ .-name,
+  data = Auto
+)
+summary(q9_mod)
+
+# Overall, there is a relationship due to the F-statistic.
+# We see that the displacement, weight, year, and origin are all significant
+# predictors. I feel like some of these should probably not be used as continuous
+# predictors though
+# We see that cars have been getting less fuel efficient over time.
+par(mfrow = c(2,2))
+plot(q9_mod)
+# The evareage leverage should be 
+cooks_d = cooks.distance(q9_mod)
+
+which(cooks_d == max(cooks_d))
+
+# see if we can figure out why this one is so wild:
+avgs = Auto %>% 
+  dplyr::select(-name) %>% 
+  summarize(
+    across(
+      everything(),
+      SvenR::pretty_iqr
+    )
+  ) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = 'var',
+    values_to = 'overall'
+  )
+
+avgs = Auto %>% 
+  dplyr::select(-name) %>%
+  slice(14) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = 'var',
+    values_to = 'num14'
+  ) %>% 
+  left_join(avgs)
+
+# Seems like it's got a much larger displacement and horsepower than
+# but is in about the middle of the weight. It's on the low end of acceleration
+# despite having medium weight.
+
+# Trying to think of which interactions might be relevant....
+q9_mod_int = lm(
+  mpg ~ . +cylinders*displacement + weight*horsepower -name,
+  data = Auto
+)
+
+# Found interaction here with horsepower*weight that is positive so the trend 
+# changes a bit if both of these increase together.
+
+# The relationships with mpg and disp/hp/weight all look potentially non linear so
+# let's try one with quadratics:
+q9_mod_poly = lm(
+  mpg ~ poly(displacement, degree = 2) + poly(horsepower, degree = 2) + poly(weight, degree = 2) + . -name,
+  data = Auto
+)
+
+# Displacement looked the most linear and we didn't see a significant square (or linear) term
+
+```
+
+#### 10 
+Here we'll make a model with some categorical predictors. I'll skip the interpretation since it's easy for me.
+```{r q10, echo=TRUE}
+
+q10_mod = lm(
+  Sales ~ Price + Urban + US,
+  data = Carseats
+)
+
+# Remove the urban variable since it doesn't seem useful:
+q10_mod2 = lm(
+  Sales ~ Price + US,
+  data = Carseats
+)
+
+# R^2 is basically identical
+anova(q10_mod2,q10_mod)
+# NO evidence that the urban term helps us
+
+q10_mod2 %>% 
+  broom::tidy()
+par(mfrow = c(2,2))
+plot(q10_mod2)
+
+# seems like there's always 1
+which(cooks.distance(q10_mod2) == max(cooks.distance(q10_mod2)))
+
+Carseats %>% 
+  slice(26) %>% 
+  dplyr::select(Sales, Price, US)
+
+Carseats %>% 
+  mutate(
+    point = row_number() == 26
+  ) %>% 
+  ggplot(
+    aes(x = Price, y = Sales, color = US, shape = point)
+  ) +
+  geom_point(size = 2)
+
+# Not obviously a strange point. It does hve the highest sales of non-US observations
+# and the price is not extremely low... but not sure quite what's going on here.
+# Definitely not an outlier but guess it could bbe a high leverage point
+
+
+```
+
+
+#### 11 
+Next we'll look at a t-test for the beta in a model with no-intercept
+
+```{r q11, echo=TRUE}
+
+set.seed(1)
+
+q11_set = tibble(
+  x = rnorm(100),
+  y = 2*x + rnorm(100)
+)
+
+
+q11_mod = lm(
+  y ~ x + 0,
+  data = q11_set
+)
+
+summary(q11_mod)
+# As we would expect, the estimate is about 2 and there is strong evidence
+# that the slope is non-zero
+
+
+q11_mod_rev = lm(
+  x ~ y + 0,
+  data = q11_set
+)
+summary(q11_mod_rev)
+# approximately the inverse
+
+
+
+```
+
+They give that the standard error for the coefficient in this case is:
+
+$$SE(\hat{\beta}) = \sqrt{\frac{\sum_{i=1}^n(y_i-x_i\hat{\beta})^2}{(n-1)\sum_{i=1}^nx_i^2}}$$
+
+Then from the definition, the t-statistic can be written as:
+
+$$t=\frac{\hat\beta-0}{SE(\hat{\beta})}=\frac{(\sum_{j=1}^nx_jy_j)/(\sum_{k=1}^nx_{k}^2)}{\sqrt{\frac{\sum_{i=1}^n(y_i-x_i(\sum_{j=1}^nx_jy_j)/(\sum_{k=1}^nx_{k}^2))^2}{(n-1)\sum_{i=1}^nx_i^2}}}$$
+Then we can combine the fractions and break up the roots:
+
+$$t=\frac{\sum_{j=1}^nx_jy_j\sqrt{(n-1)}\sqrt{\sum_{i=1}^nx_i^2}}{\sum_{k=1}^nx_{k}^2\sqrt{\sum_{i=1}^n(y_i-x_i(\sum_{j=1}^nx_jy_j)/(\sum_{k=1}^nx_{k}^2))^2}}$$
+Now cancel the root of sum of square x's in the numerator, bring the rest under the root. This gives us the correct numerator:
+
+$$t=\frac{\sqrt{(n-1)}\sum_{j=1}^nx_jy_j}{\sqrt{\sum_{k=1}^nx_{k}^2\cdot\sum_{i=1}^n(y_i-x_i(\sum_{j=1}^nx_jy_j)/(\sum_{k=1}^nx_{k}^2))^2}}$$
+I guess we could expand out the binomial in the bottom... ew:
+
+$$t=\frac{\sqrt{(n-1)}\sum_{j=1}^nx_jy_j}{\sqrt{\sum_{k=1}^nx_{k}^2[\sum_{i=1}^n(y_i^2-2x_iy_i(\sum_{j=1}^nx_jy_j)/(\sum_{k=1}^nx_{k}^2))+(x_i(\sum_{j=1}^nx_jy_j)/(\sum_{k=1}^nx_{k}^2))^2}]}$$
+Then distributing in the sum of x squares gives us the right first term and cancels with some stuff:
+
+$$t=\frac{\sqrt{(n-1)}\sum_{j=1}^nx_jy_j}{\sqrt{\sum_{k=1}^nx_{k}^2\sum_{i=1}^ny_i^2-2(\sum_{j=1}^nx_jy_j)^2+(\sum_{j=1}^nx_jy_j)^2}}$$
+
+$$t=\frac{\sqrt{(n-1)}\sum_{j=1}^nx_jy_j}{\sqrt{\sum_{k=1}^nx_{k}^2\sum_{i=1}^ny_i^2-(\sum_{j=1}^nx_jy_j)^2}}$$
+Well wow. I don't know if it was worth the time but there you go. Latex skills should be on my resume somewhere.
+
+Since this is symmetric in x and y, it doesn't matter which direction we regress. 
+
+
+#### 12 
+
+We're asked about when the estimate of $\hat{\beta}$ is the same for $X \sim Y$ and $Y \sim X$. Graphically, this should be when the slope is 1. In terms of the formula, we find this when the sum of squares is the same for both $X$ and $Y$. We already generated an example of where the estimates are different in question 11 so here is one where we should get $\hat{\beta}\approx1$
+
+```{r q12, echo=TRUE}
+
+set.seed(1)
+
+# I had to shrink the irreducible error to get the numbers closer. That makes some
+# sense as if we want this to be symmetric in X & Y, they can't be that different:
+q12_set = tibble(
+  x = rnorm(100),
+  y = x + rnorm(100, sd = 0.25)
+)
+
+
+q12_mod = lm(
+  y ~ x + 0,
+  data = q12_set
+)
+
+summary(q12_mod)
+
+q12_mod_rev = lm(
+  x ~ y + 0,
+  data = q12_set
+)
+summary(q12_mod_rev)
+# approximately the inverse
+
+sum((q12_set$x)^2)
+sum((q12_set$y)^2)
+
+```
+
+#### 13 
+Here we're asked to go through a simulation of the model:
+
+$$Y=-1+X+\epsilon$$
+
+
+```{r q13, echo=TRUE}
+
+set.seed(1)
+
+# I had to shrink the irreducible error to get the numbers closer. That makes some
+# sense as if we want this to be symmetric in X & Y, they can't be that different:
+q13_set = tibble(
+  x = rnorm(100),
+  eps = rnorm(100, sd = sqrt(0.25)),
+  y = -1 + x + eps
+)
+
+# so we should be expecting a close to 1 slope and close to -1 intercept:
+q13_mod = lm(
+  y ~ x,
+  data = q13_set
+)
+
+summary(q13_mod)
+
+ggplot(
+  data = q13_set,
+  aes(x = x, y = y)
+) +
+  geom_point(size = 2) +
+  geom_smooth(
+    method = 'lm',
+    se = FALSE,
+    color = 'red'
+  ) +
+  geom_abline(
+    slope = 1,
+    intercept = -1,
+    color = 'blue'
+  ) +
+  theme_minimal()
+
+```
+
+The population and estimated models are about the same.
+
+```{r q13_2, echo=TRUE}
+
+# Now we're asked to investigate a possible quadratic term and also
+# how the the models will change if we increase or decrease the variance.
+
+q13_mod_quad = lm(
+  y ~ poly(x, degree = 2),
+  data = q13_set
+)
+
+summary(q13_mod_quad)
+anova(q13_mod, q13_mod_quad)
+
+# not much better. What about modifying the variance down? I think that will
+# just make it more evident that the square is not helpful. Let's see the other
+# side.
+q13_set = q13_set %>% 
+  mutate(
+  eps2 = rnorm(100, sd = sqrt(0.5)),
+  y2 = -1 + x + eps2
+)
+
+q13_mod2 = lm(
+  y2 ~ x,
+  data = q13_set
+)
+
+# standard error increases by about 50%
+confint(q13_mod)
+confint(q13_mod2)
+# Fair amount wider
+
+
+```
+
+#### 14 
+Next we're going to look at co-linearity. It seems like some of those side investigations I was doing as I read were kinda like the exercises. That's okay though.  
+  
+We'll make two highly correlated predictors and then an outcome is that is a function of them jointly.
+
+```{r q14, echo=TRUE}
+
+set.seed(1)
+q14_set = tibble(
+  x1 = runif(100),
+  x2 = 0.5*x1+rnorm(100)/10,
+  y = 2 + 2*x1 + 0.3*x2 +rnorm(100)
+)
+
+plot(q14_set)
+cor(q14_set)
+
+# So we have two similarly strength predictors for Y but they they're correlated.
+
+q14_mod = lm(
+  y ~ x1 + x2,
+  data = q14_set
+)
+summary(q14_mod)
+
+# So the true beta1 = 2 and beta2 = 0.3 but here we find
+# the estimates pushed towards eachother. We can reject the null in one case
+# but not the other.
+
+# If we do univarates:
+lm(
+  y ~ x1,
+  data = q14_set
+) %>% 
+  summary()
+
+lm(
+  y ~ x2,
+  data = q14_set
+) %>% 
+  summary()
+
+# I am not sure whether to say this is a contradiction. It's true that the multicollinearity
+# is making it so we cannot estimate the individual effects accurately in the multivariable
+# model but this is a known phenomenon. 
+
+# Also a little experiment adding an outlier
+sapply(q14_set, summary)
+q14_set = q14_set %>% 
+  add_row(
+    x1= 0.1,
+    x2 = 0.8,
+    y = 6
+  )
+
+# So just from the looks of it, this should be a high leverage point but probably not an outlier
+# as it's less than the maximum Y observed but well larger than the maximum X2
+lm(
+  y ~ x1 + x2,
+  data = q14_set
+) %>% 
+  plot()
+
+# So the leverage is very large and the residual is somewhat large. With 100 obs we 
+# should expect about 5 to have absolute studentized residuals > 2 and that seeems about right. 
+q14_set %>% 
+  mutate(last_point = row_number() == 101) %>% 
+  ggplot(
+    aes(x = x1, y = x2, color = last_point)
+  ) +
+  geom_point() +
+  theme_minimal()
+
+# Yeah and we have the opposite trend here where x2 is large when x 1 is small giving
+# further evidence that this is a high leverage point
+
+```

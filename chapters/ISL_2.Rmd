@@ -119,16 +119,20 @@ I think I'll just skip this first lab as it looks like just an introduction to R
 
 ### Exercises
   
-1. Determine whether a flexible or inflexible method would be preferred in these situations:
+#### 1  
+
+Determine whether a flexible or inflexible method would be preferred in these situations:
     a. If the sample size is large and the number of predictors is small, a flexible method would be preferred. A larger sample size would lend itself better to flexible non-parametric methods. Having fewer predictors also reduces the risk of overfitting.
     b. If the sample size is small and the number of predictors is large, we would prefer a less flexible method. Flexible methods are likely to see patterns when none exist in this situation.
     c. If the relationship between preidctors and responses is highly non-linear we *might* prefer a more flexible method. I think this is probably the answer the authors intend but it depends on what kind of non-linear relationship we're talking about. If it's a relatively simple non-linear pattern, like a quadratic function, then a inflexible method like linear regression with a squared term could work just fine. I think in a lot of non-linear situations we are going to want a more flexible method though.
     d. If the variance of the error term is extremely high we would probably prefer a less flexible method. A larger irreducible error means that flexible methods will respond to this more acutely and not pick out broader trends.
-2. Categorize these situations as regression or classification and identify $n$ and $p$
+#### 2. 
+Categorize these situations as regression or classification and identify $n$ and $p$
     a. A set of 500 firms ($n$), with three features ($p$), predicting CEO salary (regression).
     b. Determinining the success or failure (classification) from 13 predictors ($p$) from a sample of 20 ($n$) similar products.
     c. Predicting the percent change in USA/Euro exchange rate (regression) from 52 weeks of data ($n$) using three ($p$) markets data.
-3. Create a rough sketch of a typical plot of square bias, training error rate, testing error rate, and Bayes error rate vs the flexibility of the model. 
+#### 3 
+Create a rough sketch of a typical plot of square bias, training error rate, testing error rate, and Bayes error rate vs the flexibility of the model. 
   
 ```{r flex_plot, echo=FALSE, fig.align='center'}
 # Make some data on a 100 point scale with 4 different model flexibilties:
@@ -153,7 +157,8 @@ tibble(
   
 The Bayes error is fixed at a particular level when you select $Y$ and $X$ so it is flat. The bias monotonically decreases as bias is due to assumptions about models. These assumptions are peeled away as flexibility increases. Testing error decreases at first as some bias is removed but then increases as the variance of the model goes up. The training error only decreases as models become more tuned to the data set used to create them.
   
-4. Think of some real life situations to use prediction, inference, and cluster analysis.
+#### 4
+Think of some real life situations to use prediction, inference, and cluster analysis.
     a. Prediction
         i. Guessing which patients will need postoperative blood transfusions.
         ii. Predicting which candidates will be effective after hiring.
@@ -167,7 +172,8 @@ The Bayes error is fixed at a particular level when you select $Y$ and $X$ so it
         ii. Categorizing employees at a large organization
         iii. Clustering types of scams.
   
-5. Cases in which you might want a less flexible method include:
+#### 5
+Cases in which you might want a less flexible method include:
     * When inference is the goal
     * When the observed relationship between predictors and responses is relatively simple
     * When the number of predictors is relatively few or the number of observations is small
@@ -176,9 +182,11 @@ Cases when we might want a more flexible approach:
     * When the number of observations is large
     * When the goal is not inference
     
-6. Parametric approaches assume some form of the predictor-response relationship that relies on one or more parameters. The training set is then used to estimate those parameters and predictions are made from the estimated function. Non-parametric approaches do not make such assumptions about the predictor/response relationship. Parametric methods are generally preferred when inference is the goal because it is easier to make quantitative (or even qualitative) statements about the predictor-response relationship. These methods tend to be inflexible and when relationships are complex, non-parametric may be preferred. 
+#### 6
+Parametric approaches assume some form of the predictor-response relationship that relies on one or more parameters. The training set is then used to estimate those parameters and predictions are made from the estimated function. Non-parametric approaches do not make such assumptions about the predictor/response relationship. Parametric methods are generally preferred when inference is the goal because it is easier to make quantitative (or even qualitative) statements about the predictor-response relationship. These methods tend to be inflexible and when relationships are complex, non-parametric may be preferred. 
   
-7. Consider using KNN for a point $X_1 = X_2 = X_3 = 0$ using the training set below:
+#### 7
+Consider using KNN for a point $X_1 = X_2 = X_3 = 0$ using the training set below:
   
 ```{r knn_setup, echo = FALSE}
 knn_train = tibble(

@@ -11,5 +11,5 @@ file_list = list.files(
 lapply(
   file_list,
   render,
-  output_dir = here::here('outputs')
+  output_dir = here::here('ISL')
 )

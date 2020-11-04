@@ -546,8 +546,10 @@ qual_mod = lm(
 
 #### 1 
 The hypotheses for the tests in table 3.4 are that the slopes between predictors and sales are non-zero and that the intercept is non-zero. From this we would conclude that even if you do not advertise at all, you will make some sales (intercept $\neq$0), that increasing TV sales by 1 unit will increase sales by 0.046 units.  
-#### 2 
+  
+#### 2  
 From what I can garner, there are two main differences between the KNN classifier and KNN regression. The first is simply that one deals with a categorical response and the other a continuous. The second difference is that the classifier takes the most common value among the neighbors and the regression takes the mean response of those neighbors.  
+  
 #### 3 
 Suppose we have a regression estimate like this:
 
@@ -556,6 +558,7 @@ The multiple choice answer is correct is that for a fixed IQ and GPA, males earn
 
 $$\text{Salary} = 50+20\cdot4+0.07\cdot110+35\cdot1+0.01\cdot4\cdot110-10\cdot4\cdot1=137,100$$
 We're also asked about the fact that the GPA*IQ term is very small and whether or not that is evidence of an interaction effect. The answer to this is no. The size of the coefficient does not tell you anything about whether or not there is strong evidence for an interaction. If the confidence interval is very small, then we could conclude there is an interaction even if the coefficient is small.  
+
 #### 4 
 Suppose we have a data set of 100 observations and a single predictor where we fit a model like this:
 $$Y=\beta_0+\beta_1X_1+\beta_2X_1^2+\beta_3X_1^3+\epsilon$$

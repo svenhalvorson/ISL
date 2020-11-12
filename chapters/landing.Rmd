@@ -6,13 +6,14 @@ output:
     toc: yes
     toc_depth: 4
 ---
+Last updated 2020-11-05
 
 I've been interested in learning some machine algorithms (outside of classical statistics) for a while now and picked up the book ['Introduction to Statistical Learning'](http://faculty.marshall.usc.edu/gareth-james/ISL/). In order to make sure that the information doesn't immediately leave my head I'm going to try and take notes on the text and complete most of the exercises. I'm sure there will be many typos but if you see something wrong with the content, please let me know at svenpubmail@gmail.com. I hope this is helpful for whoever reads it!
   
 1. Introduction
 2. [Statistical learning](https://svenhalvorson.github.io/party_page/portfolio/ISL/ISL_2)
 3. [Linear regression](https://svenhalvorson.github.io/party_page/portfolio/ISL/ISL_3)
-4. Classification
+4. [Classification](https://svenhalvorson.github.io/party_page/portfolio/ISL/ISL_4)
 5. Resampling methods
 6. Linear model selection and regularization
 7. Moving beyond linearity
@@ -20,4 +21,14 @@ I've been interested in learning some machine algorithms (outside of classical s
 9. Support vector machines
 10. Unsupervised learning
 
+  
+```{r isl_cover, echo = FALSE, warning = FALSE, message = FALSE, fig.align='center', out.width = "60%"}
 
+knitr::include_graphics(
+  here::here(
+    'figure',
+    'isl.jpg'
+  )
+)
+
+```

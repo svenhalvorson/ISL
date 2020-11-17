@@ -8,7 +8,7 @@ output:
 ---
 Last updated 2020-11-05
 
-I've been interested in learning some machine algorithms (outside of classical statistics) for a while now and picked up the book ['Introduction to Statistical Learning'](http://faculty.marshall.usc.edu/gareth-james/ISL/). In order to make sure that the information doesn't immediately leave my head I'm going to try and take notes on the text and complete most of the exercises. I'm sure there will be many typos but if you see something wrong with the content, please let me know at svenpubmail@gmail.com. I hope this is helpful for whoever reads it!
+I've been interested in learning some machine algorithms (outside of classical statistics) for a while now and picked up the book ['Introduction to Statistical Learning'](http://faculty.marshall.usc.edu/gareth-james/ISL/) (8$^th$ edition). In order to make sure that the information doesn't immediately leave my head I'm going to try and take notes on the text and complete most of the exercises. I'm sure there will be many typos but if you see something wrong with the content, please let me know at svenpubmail@gmail.com. I hope this is helpful for whoever reads it!
   
 1. Introduction
 2. [Statistical learning](https://svenhalvorson.github.io/party_page/portfolio/ISL/ISL_2)
@@ -22,7 +22,7 @@ I've been interested in learning some machine algorithms (outside of classical s
 10. Unsupervised learning
 
   
-```{r isl_cover, echo = FALSE, warning = FALSE, message = FALSE, fig.align='center', out.width = "60%"}
+```{r isl_cover, echo = FALSE, warning = FALSE, message = FALSE, fig.align='center', out.width = "40%"}
 
 knitr::include_graphics(
   here::here(

@@ -2,7 +2,6 @@
 title: 'Chapter 4: Classification'
 subtitle: "<span style='font-size: 20px'>Notes from ISL</style>"
 author: 'Sven Halvorson'
-date: "7/9/2020"
 output:
   html_document:
     toc: yes
@@ -693,7 +692,7 @@ Last question is very easy. Just converting odds to probabilities. An odds of 0.
 
 Here we're going to start out with the `Weekly` data set. This has 20 years of returns. 
   
-1. Investigate the data set for patterns
+a. Investigate the data set for patterns
 
 ```{r 10_1, echo=TRUE}
 
@@ -706,7 +705,7 @@ cor(dplyr::select(Weekly,-Direction))
 
 Very similar to the other stock data set. Small relationships between days and a large relationship between year & volume.
   
-2. Here's a logistic model using everything except `Year` & `Today`:
+b. Here's a logistic model using everything except `Year` & `Today`:
 
 ```{r 10_2, echo=TRUE}
 
@@ -723,7 +722,7 @@ summary(weekly_logistic)
 Very few relationships between predictors and outcomes. We see that two days before is a positive predictor for having a positive outcome for the day.
 
   
-3. The confusion matrix looks like this:
+c. The confusion matrix looks like this:
 ```{r 10_3, echo=TRUE}
 
 weekly_logistic_pred = predict(
@@ -741,15 +740,490 @@ table(
 
 The logistic errors are heavily concentrated in false positives. The sensitivity is 92% but the specificity is only 11%. 
 
-4. Set the data prior to 2009 as the training set and the rest of the data as the test set. Use only lag2 as a predictor and report the confusion matrix:
+d. Set the data prior to 2009 as the training set and the rest of the data as the test set. Use only lag2 as a predictor and report the confusion matrix. Repeat this for LDA, QDA, and KNN with K=1. I'll skip the code but here are the results:
 
-```{r 10_4, echo=TRUE}
+```{r 10_4, echo=FALSE}
 
 weekly_train = Weekly %>% 
   filter(Year < 2009)
 weekly_test = Weekly %>% 
   filter(Year >= 2009)
 
+form = as.formula('Direction ~ Lag2')
+
+weekly_logistic2 = glm(
+  form,
+  data = weekly_train,
+  family = 'binomial'
+)
+
+# Logistic model
+weekly_test$logistic = predict.glm(
+  weekly_logistic2,
+  newdata = weekly_test,
+  type = 'response'
+)
+weekly_test$logistic = ifelse(
+  weekly_test$logistic > 0.5,
+  'Up',
+  'Down'
+) %>% 
+  factor(levels = c('Down', 'Up'))
+
+# LDA model
+weekly_lda = lda(
+  form,
+  data = weekly_train
+)
+
+weekly_test$lda = predict(
+  weekly_lda,
+  newdata = weekly_test,
+  type = 'response'
+)$class
+
+# QDA model
+weekly_qda = qda(
+  form,
+  data = weekly_train
+)
+
+weekly_test$qda = predict(
+  weekly_qda,
+  newdata = weekly_test
+)$class
+
+# KNN with K=1
+weekly_test$knn = knn(
+  train = dplyr::select(weekly_train, Lag2),
+  test = dplyr::select(weekly_test, Lag2),
+  cl = weekly_train[['Direction']],
+  k = 1
+)
+
+weekly_test %>% 
+  summarize(
+    across(
+      logistic:knn,
+      .fns = list(
+        'accuracy' = function(x){mean(x == weekly_test$Direction)},
+        'fp' = function(x){sum(x == 'Up' & weekly_test$Direction == 'Down')},
+        'fn' = function(x){sum(x == 'Down' & weekly_test$Direction == 'Up')}
+      )
+    )
+  ) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = 'dum',
+    values_to = 'val'
+  ) %>% 
+  separate(dum, into = c('model', 'measure')) %>% 
+  pivot_wider(
+    names_from = measure,
+    values_from = val
+  )
+
+
 ```
 
+So from this we can see that the logistic regression and LDA are quite similar which indicates a linear decision boundary. The other two method seem to provide poorer fit which is not unexpected with a relatively small data set.
+
+i. The last question just suggests that we try some different combination of variables, including transformations and interactions, as well as different values of K. I think in the interest of time, I'll just do some square terms, log transforms, and one interaction. Then I'll combine any of these that seem successful for a 'final' model.
+
+The lag variables seem relatively normal so from the perspective of the LDA and QDA models, a log transform might do better. Since Lag2 was the strongest predictor, we'll try a square term of this. It looks like the adjacent days have the strongest relationships among the lags so lets try lag1:lag2 as well as lag2:log(Volume). We'll also try K = 1, 3, 5 for each of these specifications.
+
+```{r 10_5, echo=TRUE}
+
+# Apply these transformations:
+Weekly = Weekly %>% 
+  mutate(
+    lag2_sq = Lag2*Lag2,
+    volume_log = log(Volume),
+    lag2_volume_log = Lag2*volume_log,
+    lag2_lag1 = Lag2*Lag1
+  )
+weekly_train = Weekly %>% 
+  filter(Year < 2009)
+weekly_test = Weekly %>% 
+  filter(Year >= 2009)
+
+# List of predictor sets to try:
+model_performances = list(
+  c('Lag2'),
+  c('Lag2', 'volume_log'),
+  c('Lag2', 'lag2_sq'),
+  c('Lag2', 'Lag1', 'lag2_lag1'),
+  c('Lag2', 'volume_log', 'lag2_volume_log'),
+  c('Lag2', 'lag2_sq', 'Lag1', 'lag2_lag1', 'volume_log', 'lag2_volume_log')
+)
+
+```
+
+I'll hide the code for the next part but basically I wrote a function that would try these different sets of predictors on the different models. The best performers are here:
+
+```{r 10_5_2, echo=FALSE}
+# Write a function to do all the models with the specified predictors
+make_models = function(pred_list){
+  
+  form =  paste(
+    'Direction ~',
+    paste0(pred_list, collapse = ' + ')
+  ) %>% 
+    as.formula()
+  
+  
+  logistic_p = glm(
+    form,
+    data = weekly_train,
+    family = 'binomial'
+  ) %>% 
+    predict(
+      newdata = weekly_test,
+      type = 'response'
+    )
+  logistic_p = ifelse(
+    logistic_p > 0.5,
+    'Up',
+    'Down'
+  ) %>% 
+    factor(levels = c('Down', 'Up'))
+  
+  lda_p = lda(
+    form,
+    data = weekly_train
+  ) %>% 
+    predict(
+      newdata = weekly_test,
+      type = 'response'
+  ) %>% 
+    pluck('class')
+  
+  qda_p = qda(
+    form,
+    data = weekly_train
+  ) %>% 
+    predict(
+      newdata = weekly_test,
+      type = 'response'
+  ) %>% 
+    pluck('class')
+  
+  # KNN with K=1
+  knn1_p = knn(
+    train = dplyr::select(weekly_train, one_of(pred_list)),
+    test = dplyr::select(weekly_test, one_of(pred_list)),
+    cl = weekly_train[['Direction']],
+    k = 1
+  )
+  
+  knn3_p = knn(
+    train = dplyr::select(weekly_train, one_of(pred_list)),
+    test = dplyr::select(weekly_test, one_of(pred_list)),
+    cl = weekly_train[['Direction']],
+    k = 3
+  )
+  
+  knn5_p = knn(
+    train = dplyr::select(weekly_train, one_of(pred_list)),
+    test = dplyr::select(weekly_test, one_of(pred_list)),
+    cl = weekly_train[['Direction']],
+    k = 5
+  )
+  
+  tibble(
+    logistic = logistic_p,
+    lda = lda_p,
+    qda = qda_p,
+    knn1 = knn1_p,
+    knn3 = knn3_p,
+    knn5 = knn5_p
+  ) %>% 
+  summarize(
+    across(
+      everything(),
+      .fns = list(
+        'accuracy' = function(x){round(mean(x == weekly_test$Direction),3)},
+        'fp' = function(x){sum(x == 'Up' & weekly_test$Direction == 'Down')},
+        'fn' = function(x){sum(x == 'Down' & weekly_test$Direction == 'Up')}
+      )
+    )
+  ) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = 'dum',
+    values_to = 'val'
+  ) %>% 
+  separate(dum, into = c('model', 'measure')) %>% 
+  pivot_wider(
+    names_from = measure,
+    values_from = val
+  ) %>% 
+  mutate(
+    preds = paste0(pred_list, collapse = ' + ')
+  )
+}
+
+model_performances %>% 
+  lapply(make_models) %>% 
+  bind_rows() %>% 
+  arrange(desc(accuracy), fp, fn)
+
+
+```
+The null classifier in this case would be predicting it goes up every day and this model has an accuracy of 58.6%. With this in mind, we're not looking so good on any of these. It looks like we could not really improve the performance with alternative predictors and/or transformations. That makes some sense to me given what the initial logistic regression output was like with all of the possible predictors. In general, that is not a way to tell because it's certainly possible that transformations perform better but when we see overall low correlations with the raw data, we shouldn't be that optimistic about.
+  
+#### 11
+The next question is somewhat similar in that we are going to try these same classification strategies on the `Auto` data set with the response being an above median mpg. We'll first choose a subset of predictors visually and then try the different models. We'll then compute some summary statistics on performance.
+
+```{r 11, echo = TRUE}
+
+# first divide into training and test:
+auto = Auto %>% 
+  dplyr::select(-name) %>%
+  mutate(
+    origin = factor(origin),
+    mpg01 = factor(
+      as.numeric(mpg > median(mpg)),
+      levels = 0:1
+    )
+  )
+
+set.seed(0)
+auto_train = auto %>% 
+  sample_frac(0.8)
+auto_test = auto %>% 
+  anti_join(auto_train)
+
+# So for the continuous predictors, I think we can just scatter them.
+# we will eventually make this binary
+auto_train %>% 
+  # Real tired of specifying which select. Next chapter ima just load tidyverse after MASS
+  dplyr::select(-origin) %>% 
+  mutate(
+    across(
+      -matches('mpg'),
+      function(x){(x-mean(x))/sd(x)}
+    )
+  ) %>% 
+  pivot_longer(
+    cols = -matches('mpg'),
+    names_to = 'var',
+    values_to = 'val'
+  ) %>% 
+  ggplot(
+    aes(
+      x = val, 
+      y = mpg,
+      color = mpg01
+    )
+  ) + 
+  geom_point(size = 2) +
+  theme_minimal() +
+  facet_wrap(.~var)
+
+chisq.test(x = auto_train$mpg01, y = auto_train$origin)
+```
+
+So from this investigation, it looks like every variable is possibly useful but acceleration and year seem a bit less clear. Displacement, horsepower, and weight all seem nonlinear so maybe we will try some square terms for those. How about the normality assumption fro LDA/QDA?
+
+```{r 11_2, echo = FALSE}
+auto_train %>% 
+  # Real tired of specifying which select. Next chapter ima just load tidyverse after MASS
+  dplyr::select(-origin) %>% 
+  mutate(
+    across(
+      -matches('mpg'),
+      function(x){(x-mean(x))/sd(x)}
+    )
+  ) %>% 
+  pivot_longer(
+    cols = -matches('mpg'),
+    names_to = 'var',
+    values_to = 'val'
+  ) %>% 
+  ggplot(
+    aes(
+      x = val, 
+      color = mpg01,
+      fill = mpg01
+    )
+  ) + 
+  geom_histogram(size = 2) +
+  theme_minimal() +
+  facet_wrap(.~var)
+
+```
+
+Looking at this also makes me not want to use acceleration in the models since again, it seems to have low relationship with mpg. Year an cylindar look pretty non-normal to me so lets exclude those from the LDA/QDA.  Perhaps we'll try with and without to see if it actually does worse.
+
+```{r 11_3, echo = TRUE}
+
+auto = Auto %>% 
+  dplyr::select(-name) %>%
+  mutate(
+    origin = factor(origin),
+    mpg01 = factor(
+      as.numeric(mpg > median(mpg)),
+      levels = 0:1
+    ),
+    displacement_sq = displacement^2,
+    horsepower_sq = horsepower^2,
+    weight_sq = weight^2
+  )
+
+set.seed(0)
+auto_train = auto %>% 
+  sample_frac(0.8)
+auto_test = auto %>% 
+  anti_join(auto_train)
+
+base_preds = c(
+  'origin',
+  'cylinders',
+  'displacement',
+  'horsepower',
+  'weight',
+  'year'
+)
+
+full_preds = c(
+  base_preds,
+  'displacement_sq',
+  'horsepower_sq',
+  'weight_sq',
+  'year'
+)
+
+lda_preds = full_preds %>% 
+  setdiff(c('origin', 'cylinders'))
+
+pred_names = c('base', 'add square terms', 'remove factors')
+
+
+```
+
+Now I'll use a similar function as last time to do this:
+
+```{r 11_4, echo = FALSE}
+
+# copy pasta
+make_models2 = function(pred_list, nm){
+  
+  #print('1')
+  form =  paste(
+    'mpg01 ~',
+    paste0(pred_list, collapse = ' + ')
+  ) %>% 
+    as.formula()
+  
+  
+  logistic_p = glm(
+    form,
+    data = auto_train,
+    family = 'binomial'
+  ) %>% 
+    predict(
+      newdata = auto_test,
+      type = 'response'
+    )
+  logistic_p = ifelse(
+    logistic_p > 0.5,
+    1,
+    0
+  ) %>% 
+    factor(levels = 0:1)
+  
+  lda_p = lda(
+    form,
+    data = auto_train
+  ) %>% 
+    predict(
+      newdata = auto_test,
+      type = 'response'
+  ) %>% 
+    pluck('class')
+  
+  qda_p = qda(
+    form,
+    data = auto_train
+  ) %>% 
+    predict(
+      newdata = auto_test,
+      type = 'response'
+  ) %>% 
+    pluck('class')
+  
+  # KNN with K=1
+  knn1_p = knn(
+    train = dplyr::select(auto_train, one_of(pred_list)),
+    test = dplyr::select(auto_test, one_of(pred_list)),
+    cl = auto_train[['mpg01']],
+    k = 1
+  )
+  
+  knn3_p = knn(
+    train = dplyr::select(auto_train, one_of(pred_list)),
+    test = dplyr::select(auto_test, one_of(pred_list)),
+    cl = auto_train[['mpg01']],
+    k = 3
+  )
+  
+  knn5_p = knn(
+    train = dplyr::select(auto_train, one_of(pred_list)),
+    test = dplyr::select(auto_test, one_of(pred_list)),
+    cl = auto_train[['mpg01']],
+    k = 5
+  )
+  
+  tibble(
+    logistic = logistic_p,
+    lda = lda_p,
+    qda = qda_p,
+    knn1 = knn1_p,
+    knn3 = knn3_p,
+    knn5 = knn5_p
+  ) %>% 
+  summarize(
+    across(
+      everything(),
+      .fns = list(
+        'accuracy' = function(x){round(mean(x == auto_test$mpg01),3)},
+        'fp' = function(x){sum(x == 1 & auto_test$mpg01 == 0)},
+        'fn' = function(x){sum(x == 1 & auto_test$mpg01 == 1)}
+      )
+    )
+  ) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = 'dum',
+    values_to = 'val'
+  ) %>% 
+  separate(dum, into = c('model', 'measure')) %>% 
+  pivot_wider(
+    names_from = measure,
+    values_from = val
+  ) %>% 
+  mutate(
+    preds = nm
+  )
+}
+
+Map(
+  f = make_models2,
+  pred_list = list(
+    base_preds,
+    full_preds,
+    lda_preds
+  ),
+  nm = pred_names
+) %>% 
+  bind_rows() %>% 
+  head(20)
+
+
+```
+
+In general, these models do much better than in the previous example. The null model would achieve 50% accuracy and here we're in the high 80s and low 90s. The model that does the best is the LDA without the non-normal seeming features which is in agreement with my previous thought that we really will care about violations of this assumption in practice. The logistic models generally do pretty well and the KNN with K=3 is doing well too. Using KNN with K=1 just seems like a bad idea in general. I think the lack of flexibility will cause this to be highly volatile and I would be surprised if this is a common choice for K.
+  
+The remaining exercises are a tutorial on function writing which I do not need and another similar example on employing this which I think I'll skip since taking these long notes is getting me behind my study group.
 

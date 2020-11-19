@@ -2,7 +2,6 @@
 title: 'Chapter 2: Statistical Learning'
 subtitle: "<span style='font-size: 20px'>Notes from ISL</style>"
 author: 'Sven Halvorson'
-date: "7/9/2020"
 output:
   html_document:
     toc: yes

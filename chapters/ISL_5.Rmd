@@ -6,6 +6,8 @@ output:
   html_document:
     toc: yes
     toc_depth: 4
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -16,7 +18,7 @@ library('ISLR')
 library('boot')
 ```
 
-### Definitions
+### Definitions  
 <u><span style='font-size: 18px'>5.1</u></style>
   
 * **Resampling methods**: Statistical techniques derived from drawing random samples with replacement from the training data.
@@ -25,8 +27,10 @@ library('boot')
 * **Validation set approach**: Setting aside a portion of the data as a test set
 * **Leave on out cross validation (LOOCV)**: Fitting the statistical method repeatedly each with a different observation excluded as a test set. Test summary statistics are averaged across the 1 observation test sets.
 * **K-fold cross validation**: Method of cross validation in which we divide the data into k equally sized sets. Repeatedly fit the statistical learning method into 
+  
 <u><span style='font-size: 18px'>5.2</u></style>
-* **Bootstrap**: A method of quantifying variation or uncertainty of a statistic or model by repeatedly sampling the training data with replacement.  
+* **Bootstrap**: A method of quantifying variation or uncertainty of a statistic or model by repeatedly sampling the training data with replacement.   
+  
 ### Notes
 
 #### 5.1: Cross-Validation
@@ -35,7 +39,7 @@ Despite its importance, the first section is not overly complicated so I will tr
 
 The major concept here is *cross-validation* which broadly encompasses the idea of comparing performance on the training and testing data sets. Most statistical learning techniques minimize the training error rate but this is not a sufficient metric to declare the model successful or select one technique over another. Our ultimate goal for predictive modeling is to have a low test error rate. Cross validation methods attempt to help us quantify the test error rate as well as compare the test error between multiple models.
   
-At the heart of this topic is a tension between wanting to use as much data as possible to training our learning method and also wanting to test it on fresh data. If we apportion all of the data for training, we will not have a good estimate of the training error rate. Conversely, if we sacrifice a large portion of our data to test the model, the model fit may not be as good due to a smaller sample size. This will overestimate the testing error rate. While the way I described this is a bit of a false dichotomy, it exemplifies the competing interests of a tight model fit and the ability to test it.  
+At the heart of this topic is a tension between wanting to use as much data as possible to training our learning method and also wanting to test it on fresh data. If we apportion all of the data for training, we will not have a good estimate of the testing error rate. Conversely, if we sacrifice a large portion of our data to test the model, the model fit may not be as good due to a smaller sample size. This will overestimate the testing error rate. While the way I described this is a bit of a false dichotomy, it exemplifies the competing interests of a tight model fit and the ability to test it.  
   
 There are three methods described in the book about how to go about validating models and/or selecting among them. From my reading, the authors clearly prefer the third method, but they present the others for intuition and comparison purposes. Here I will outline them:  
   
@@ -44,7 +48,7 @@ i. The exact partition of data into training and testing sets can have a dramati
 ii. Because we set aside a chunk of the data, the training set will necessarily be smaller and thus the fit may be poorer. As a result, the testing error rate may be overestimated due to a less tuned model.  
 2. **Leave one out cross validation (LOOCV)**: Alternatively, we could leave a single observation out of the model and use this as a test set. Doing this once would be a highly volatile method but if we do it with every observation in the data set, we can average these errors to estimate the testing error rate. The error for a continuous response could be estimated like this:
 $$CV_{(n)}=\frac{1}{n}\sum_{i=1}^n\text{MSE}_i$$
-Where $\text{MSE_i}$ is $(y_i-\hat{y_i})^2$. Here we're computing N models and computing one unbiased estimate of the testing MSE from each. Then averaging these gives a more robust estimate of the testing MSE. By doing this, we avoid the two problems mentioned with the validation set approach. First, we will be using *almost* all the data so we will not inflate the test error rate by using an arbitrarily small data set to training our learning method. Secondly, possible bias from selecting a particular subset of the data will not matter because LOOCV does the same thing for every observation. The major drawback of this method is that it's very computationally expensive. Until recently, this would not be possible with many large data sets and/or complex models but now we can try it. Even so, I suspect that you would not want to use this method as any kind of preliminary step. Perhaps once you've found a model that you're overall pleased with, you could set this to run overnight in order to get a more accurate estimate of the training MSE/error rate. One other thing to mention here is that there is a nice closed form for linear regression (even with polynomial terms) that uses the converse of the leverage as a weight.  
+Where $\text{MSE}_i$ is $(y_i-\hat{y_i})^2$. Here we're computing N models and computing one unbiased estimate of the testing MSE from each. Then averaging these gives a more robust estimate of the testing MSE. By doing this, we avoid the two problems mentioned with the validation set approach. First, we will be using *almost* all the data in each model fit so we will not inflate the test error rate by using an arbitrarily small data set to train our learning method. Secondly, possible bias from selecting a particular subset of the data will not matter because LOOCV does the same thing for every observation. The major drawback of this method is that it's very computationally expensive. Until recently, this would not be possible with many large data sets and/or complex models but now we can try it. Even so, I suspect that you would not want to use this method as any kind of preliminary step. Perhaps once you've found a model that you're overall pleased with, you could set this to run overnight in order to get a more accurate estimate of the training MSE/error rate. One other thing to mention here is that there is a nice closed form for linear regression (even with polynomial terms) that uses the converse of the leverage as a weight.  
 3. **k-fold cross validation**: This last method is a bit between the other two and definitely seems to be preferred by the authors. Instead of just picking on subset/observation to leave out, we partition the data into $k$ subsets. Then we apply the validation set approach $k$ times where each time we're using $\frac{1}{k}^{th}$ of the data as a validation set. We then compute the estimate of the test error way in a similar fashion as the LOOCV method:
 $$CV_{(k)}=\frac{1}{k}\sum_{i=1}^k\text{MSE}_i$$
 By doing this, we are able to partially solve the problems of each of the previous methods. We are not nearly as reliant on the exact subset we pick as the first method and we will use a larger portion of the data to fit the models. We're told that typically people choose $k=5$ or $k=10$ but in general, $k << N$, so the number of models that will need to be fit is quite a bit smaller than for LOOCV meaning this can be done more quickly. 
@@ -292,6 +296,7 @@ The linear model is computing these standard errors based off the assumptions th
   
 #### 1  
 They ask to derive the formulation of $\alpha$ in the bootstrapping example and I did this in the text.  
+  
 #### 2  
 What is the probability that a particular bootstrap sample where the sample size is N? Well the probability that the observation is not the first observation is $1-\frac{1}{N}$. Then the probability that the specific observation is none of the observations in the bootstrap sample is $1-(1-\frac{1}{N})^N$. Here's a graph of what that looks like as we increase the sample size.
 
@@ -333,9 +338,305 @@ vapply(
 
 ```
 I wonder if there is some intuitive way we could have known this. We could go through figuring out what the limit is but I was kind of hoping to knwo why there is abut a 62% chance of this happening.
-  
+   
 #### 3 
 I made nice notes comparing k-fold classification with the other two already  
+  
 #### 4 
 Suppose we use a statistical learning method to make a prediction about $Y$ for some value of $X$. If we want to estimate the the sample standard deviation of these, we could use a bootstrap. A plausible method could be to sample the data with replacement, fit the statistical learning method, and then make a prediction at $X$. After repeating this many times, we could compute the sample standard deviation from these predictions and use it as an estimate for the general standard deviation about the prediction.  
-#### 4
+  
+#### 5
+We're going to return to the `default` data set where we'll use the validation set approach to estimate the testing error of modeling whether someone defaults as a function of `income` and `balance`. We'll also consider possible improvement by including `student` into the model.
+
+```{r q5, echo = TRUE}
+
+# This will be easier if we just make the outcome literally binary:
+Default = Default %>% 
+  mutate(
+    default_bin = as.numeric(default == 'Yes')
+  )
+
+default_mod = function(seed){
+  
+  set.seed(seed)
+  def_train = sample_frac(Default, 0.5)
+  def_test = anti_join(Default, def_train)
+  
+  mod1 = glm(
+    default_bin ~ income + balance,
+    data = def_train,
+    family = 'binomial'
+  )
+  mod1_err = predict(
+    mod1,
+    newdata = def_test,
+    type = 'response'
+  ) %>% 
+    round()
+  mod1_err = mean(mod1_err != def_test$default_bin)
+  
+  mod2 = glm(
+    default_bin ~ income + balance + student,
+    data = def_train,
+    family = 'binomial'
+  )
+  mod2_err = predict(
+    mod2,
+    newdata = def_test,
+    type = 'response'
+  ) %>% 
+    round()
+  mod2_err = mean(mod2_err != def_test$default_bin)
+  
+  tibble(
+    null_error = mean(def_train$default_bin),
+    mod1_err = mod1_err,
+    mod2_err = mod2_err
+  )
+}
+
+
+(1:3) %>% 
+  lapply(default_mod) %>% 
+  bind_rows()
+
+```
+The overall performance is not great; we only reduced the error rate by about 30% from the null model. The `student` variable does not appear to add anything to the model. I believe we previously saw that this was simply associated with balance and not effective when combined.  
+  
+#### 6
+We will now compare some estimates of standard error for the logistic regression coefficients with those produced from bootstrap samples. Begin by just looking at the coefficient estimates and their standard errors:
+
+```{r q6_1, echo = TRUE}
+
+glm(
+  default_bin ~ income + balance,
+  data = Default,
+  family = 'binomial'
+) %>% 
+  broom::tidy(exponentiate = TRUE)
+
+```
+
+Now we write a function for `boot` in order to estimate these:
+
+```{r, q6_2, echo = TRUE}
+
+default_coef = function(data, index){
+  
+  Default %>% 
+    slice(index) %>% 
+    glm(
+      formula = default_bin ~ income + balance,
+      family = 'binomial'
+    ) %>% 
+    coef() %>% 
+    exp()
+}
+
+boot(
+  data = Default,
+  statistic = default_coef,
+  R = 1000
+)
+
+```
+
+Extremely similar. Much power, very bootstrap
+  
+#### 7
+
+Here we're going to use the `Weekly` data set to model `Direction` using `Lag1` and `Lag2` as predictors. We'll manually compute the LOOCV testing error rate.
+
+```{r q7, echo = TRUE}
+
+make_loocv = function(i){
+  
+  mod = glm(
+    formula = Direction ~ Lag1 + Lag2,
+    data = slice(Weekly, -1*i),
+    family = 'binomial'
+  )
+  
+  Weekly %>% 
+    slice(i) %>% 
+    mutate(
+      pred_prob = predict.glm(
+        mod, 
+        newdata = slice(Weekly, i), 
+        type = 'response'
+      ),
+      prediction = ifelse(
+        pred_prob > 0.5,
+        'Up',
+        'Down'
+      ),
+      prediction = factor(
+        prediction,
+        levels = c('Down', 'Up')
+      )
+    )
+  
+}
+
+weekly_loocv = lapply(
+  1:nrow(Weekly),
+  make_loocv
+) %>% 
+  bind_rows()
+
+# Testing error rate estimate:
+mean(weekly_loocv$Direction != weekly_loocv$prediction)
+```
+
+So here we get an error rate that is quite similar to the null model which is unsurprising given how week of a relationship there is between the predictors and response.
+  
+#### 8
+We're going manually compute the LOOCV again manually and this time we'll try up to a fourth power of the predictor. We'll then compare the models as well as the results using different seeds.
+
+```{r q8, echo = TRUE}
+
+# Here's the simulated data we've been given:
+set.seed(1)
+sim_dat = tibble(
+  x = rnorm(100),
+  y = x-2*x^2+rnorm(100)
+)
+# So just from the formulation, we should expect the quadratic model to perform the best.
+
+# First a functin to make the polynomial regression models:
+pwr_mod = function(dat, deg){
+  
+  glm(
+    formula = y ~ poly(x, degree = deg),
+    data = dat
+  )
+  
+}
+
+# Make the model without each observation and predict:
+make_loocv2 = function(i){
+  
+  mods = lapply(
+    X = 1:4,
+    FUN = pwr_mod,
+    dat = slice(sim_dat, -1*i)
+  )
+  
+  predictions = lapply(
+    X = mods,
+    FUN = predict.glm,
+    FUN.VALUE = numeric(1),
+    newdata = slice(sim_dat, i)
+  )
+  
+  names(predictions) = paste0('deg_', 1:4)
+  as_tibble(predictions)
+  
+}
+
+# now run it:
+sim_dat = (1:nrow(sim_dat)) %>% 
+  lapply(make_loocv2) %>% 
+  bind_rows() %>% 
+  bind_cols(sim_dat) %>% 
+  mutate(
+    across(
+      matches('deg_'),
+      function(x){x - sim_dat$y}
+    )
+  )
+
+# What are the mse:
+sim_dat %>% 
+  summarize(
+    across(
+      matches('deg'),
+      function(x){mean((x - mean(x))^2)}
+    )
+  )
+
+```
+
+As predicted, the quadratic model has the lowest estimated test MSE. We're also asked about different seeds but we know this should not affect the results of LOOCV as there is no randomness in the process.
+  
+#### 9
+The final question uses the `Boston` data set. We'll go through a series of related questions:  
+  
+i. Provide an estimate of the population meand of `medv` (median value of owner occupied homes in 1000$)
+```{r q9_1, echo TRUE}
+
+Boston = MASS::Boston
+medv_mean = mean(Boston$medv)
+medv_mean
+```
+
+ii. Estimate the standard error:
+```{r q9_2, echo TRUE}
+
+sd(Boston$medv)/sqrt(nrow(Boston))
+
+```
+iii. Estimate the standard error using a bootstrap:
+```{r q9_3, echo TRUE}
+
+medv_boot = boot(
+  data = Boston,
+  statistic = function(data, index){
+    data %>% 
+      slice(index) %>% 
+      pluck('medv') %>% 
+      mean()
+  },
+  R = 1000
+)
+
+medv_boot
+```
+Quite close as expected.
+  
+iv. Use the bootstrap to compute a 95% CI for `medv` and compare the results to a t-test.
+```{r q9_4, echo TRUE}
+
+medv_boot_se = sd(medv_boot$t) 
+paste0(
+  'Bootstrapped CI = (', 
+  round(medv_mean - 1.96*medv_boot_se, 3), 
+  ', ', 
+  round(medv_mean + 1.96*medv_boot_se, 3),
+  ')'
+)
+
+t.test(Boston$medv)
+```
+
+v. Repeat this process with the median and tenth percentile. Order statistics don't have (or at least I'm not aware of) nice formulae for computing their standard errors so the bootstrap is very useful in this case:
+```{r q9_5}
+
+# First just get estimates of these from the raw data:
+Boston %>% 
+  summarize(
+    median = median(medv),
+    q10 = quantile(medv, 0.1)
+  )
+
+# Now bootstrap:
+boot(
+  data = Boston,
+  statistic = function(data, index){
+    medvs = data %>% 
+      slice(index) %>% 
+      pluck('medv')
+    medvs = c(
+      median(medvs),
+      quantile(medvs, 0.1)
+    )
+    names(medvs) = c('median', 'q10')
+    medvs
+  },
+  R = 1000
+)
+
+```
+We again get good point estimates and now have access to standard errors of these difficult to wrangle statistics. I was hoping that applying names to the output vector would put them in the `print` statement but oh well. 
+
+Alright, so I thought this chapter was quite nice. I didn't know these cross validation methods at all and it was nice to work with them. I didn't get the feeling that this was particuarly difficult however I'm sure that there are some more advanced methods and scenarios that would make this more challenging.

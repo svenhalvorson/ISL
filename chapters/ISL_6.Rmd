@@ -1,0 +1,47 @@
+---
+title: 'Chapter 6: Linear Model Selection & Regularization'
+subtitle: "<span style='font-size: 20px'>Notes from ISL</style>"
+author: 'Sven Halvorson'
+output:
+  html_document:
+    toc: yes
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE)
+```
+
+### Definitions
+<u><span style='font-size: 18px'>6.1</u></style>
+  
+* ** **:
+<u><span style='font-size: 18px'>6.2</u></style>
+<u><span style='font-size: 18px'>6.3</u></style>
+<u><span style='font-size: 18px'>6.4</u></style>
+
+
+  
+### Notes
+
+#### 6.1: Subset Selection
+
+#### 6.2: Shrinkage Methods
+
+#### 6.3: Dimension Reduction Methods
+
+#### 6.4: Considerations in High Dimensions
+
+### Lab
+
+```{r silent, echo = FALSE}
+
+```
+
+```{r show_code, echo=FALSE}
+
+```
+
+### Exercises
+  
+#### 1

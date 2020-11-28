@@ -15,7 +15,7 @@ I've been interested in learning some machine algorithms (outside of classical s
 3. [Linear regression](https://svenhalvorson.github.io/party_page/portfolio/ISL/ISL_3)
 4. [Classification](https://svenhalvorson.github.io/party_page/portfolio/ISL/ISL_4)
 5. [Resampling methods](https://svenhalvorson.github.io/party_page/portfolio/ISL/ISL_5)
-6. Linear model selection and regularization
+6. [Linear model selection and regularization](https://svenhalvorson.github.io/party_page/portfolio/ISL/ISL_6)
 7. Moving beyond linearity
 8. Tree-based methods
 9. Support vector machines

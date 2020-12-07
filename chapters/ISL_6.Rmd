@@ -6,23 +6,33 @@ output:
   html_document:
     toc: yes
     toc_depth: 4
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message=FALSE)
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, fig.align = 'center')
+library('tidyverse')
 ```
 
 ### Definitions
 <u><span style='font-size: 18px'>6.1</u></style>  
-* **Best subset selection**: Choosing the set of predictors that make the 'best model' by some criterion.
-* **Mallow's $C-p$**: An unbiased estimate of the test MSE given as $C_p = \frac{1}{n}(RSS+2d\hat{\sigma}^2)$.
-* **Akaike's information criterion**: A measure of the information lost for an estimate of $f$. Given by $AIC=2d-2ln(L)$
-* **Bayesian information criterion**: Alternative method of model selection given as $BIC=k\cdot ln(n)-2ln(L)$.
-
+* **Best subset selection**: Choosing the set of predictors that make the 'best model' by some criterion.  
+* **Mallow's $C-p$**: An unbiased estimate of the test MSE given as $C_p = \frac{1}{n}(RSS+2d\hat{\sigma}^2)$.  
+* **Akaike's information criterion**: A measure of the information lost for an estimate of $f$. Given by $AIC=2d-2ln(L)$  
+* **Bayesian information criterion**: Alternative method of model selection given. as $BIC=k\cdot ln(n)-2ln(L)$.
+* **One standard deviation rule**: Heuristic that selecting the model with the fewest predictors that has a test MSE within 1 standard deviation of the best performing model should be preferred for simplicity and interpretation.  
+  
 <u><span style='font-size: 18px'>6.2</u></style>  
-* ** **:
+* **Shrinkage methods**: Alternatives to traditional regression where we apply a penalty to the coefficient estimates in order to reduce variance.  
+* **Ridge regression**: A shrinkage technique where we minimize the RSS plus the $\ell_2$ norm of the coefficients.  
+* **Lasso regression**: Similar method to ridge regression however substituting the $\ell_1$ norm instead of the $\ell_2$ norm.  
+* **Sparse model**: A model that uses a subset of the maximum possible number of predictors.  
+  
 <u><span style='font-size: 18px'>6.3</u></style>  
-* ** **:
+* **Dimension reduction methods**: Methods of converting/combining a number of predictors in order to put less strain on a model in terms of the number of parameters that need to be estimated.
+* **Principal component analysis**: An unsupervised method of selecting a set of linear combinations of predictors. Selects sequentially important orthogonal axes of variation.
+  
 <u><span style='font-size: 18px'>6.4</u></style>  
 * ** **:
 
@@ -31,18 +41,22 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE)
 ### Notes
 
 This chapter focuses on a number of tweaks we can make to linear models. The most important concerns addressed here are:  
+  
 i. Reducing the variance of models produced in situations where the number of predictors is close to the number of observations.  
 ii. Improving interpretability by reducing the total number of predictors.
   
 The methods described are:
-i. **Subset selection**: Choosing only a subset of predictors to use.
-ii. **Shrinkage methods**: Reducing variance of model fitting by diminishing the effect of some or all of the predictors.
-iii. **Dimension reduction**:: Reframing the problem in terms of combinations of variables thus reducing the number of used predictors.
+  
+i. **Subset selection**: Choosing only a subset of predictors to use.  
+ii. **Shrinkage methods**: Reducing variance of model fitting by diminishing the effect of some or all of the predictors.  
+iii. **Dimension reduction**:: Reframing the problem in terms of combinations of variables thus reducing the number of used predictors.  
   
 #### 6.1: Subset Selection
 
 It's often the case that we have many more variables than necessary to create an effective statistical learning model. This can happen because some predictors are unrelated to the outcomes, because a complicated model is more difficult to interpret, or because the number of predictors strains or prohibits the model fit. In order to avoid these problems, we will use *subset selection* methods.  
+  
 As a theoretical starting point, we can consider the *best subset selection method*. In some cases, this is possible but I get the feeling that this serves mostly as a foil for the other methods discussed. Essentially, it involves us fitting every ($2^p$) model possible and then using some kind of cross validation method to compare them. The model with the best fit under that method would be chosen ad the 'best subset' of predictors. Unfortunately, this takes a lot of time and will be computationally expensive so it is not ideal for most situations.  
+  
 A variation on this is given where we reduce the time spent cross validating by these steps:  
 1. Begin with a null model $\mathcal{M}_0$ using no predictors.
 2. For $0<i\leq p$, create all the models with $i$ predictors. Select the model with the least RSS as $\mathcal{M}_i$ (or another measure such as deviance)
@@ -50,19 +64,20 @@ A variation on this is given where we reduce the time spent cross validating by 
 Personally, I don't find this algorithm to be that compelling because the only thing that it reduces over testing every possible model is the cross validation step. In practice, the model fitting will probably be the longest time investment and this still involves fitting every possible model.
   
 The next set of methods all fall under the heading of *stepwise selection*. These methods involve some kind of iterative re-fitting of models in which we start with some initial model and then repeatedly add and/or remove predictors to the model according to some criteria related to the potential change in model fit. Forward and backward selection work like this:  
-1. Begin with a null model $\mathcal{M}_0$. In the case of forward, this is the intercept only. For backward, we start with the full model.
-2. Add or remove (depending on direction) predictors one by one and compute a summary statistic for each such as RSS. Select the model the best of these models as $\mathcal{M}_1$
-3. For each subsequent $1<i\leq p$, build upon the the previous model. Again consider all of the $p-i+1$ remaining predictors and choose one to add/remove from the model and set the best of these as $\mathcal{M}_i$.
-4. Cross validate $\mathcal{M}_0, \mathcal{M}_1, ..., \mathcal{M}_p$ or use another metric to choose the best subset of predictors.  
-These are pretty reasonable ways to select a model in my opionin as they do not have to fit nearly as many models ($\frac{p(p+1)}{2}$.  
-Some other things to note about stepwise selection methods:
-a. Forward and backward selection do not necessarily yield the same results althoug the subsets are often similar or identical.
-b. There is no guarantee that the the best model is actually considered in these methods. The are what you might call 'greedy' algorithms in which they try to maximize at each step. The true best model could involve just two predictors, neither of which would be selected in the first round of forward selection.
-c. When $n<p$, backwards selection cannot be performedand forward selection will terminate at subsets of size $n$.
-d. There are hybrid approaches in which we set criteria to enter as well as leave. These methods sometimes behave like 'after each additional variable is added, the other predictors are then re-evaluated for removal' and then there is some kind of stopping procedure to make sure this doesn't go in loops.
   
-  The next portion of the text describes some ways of choosing the 'best' subset. One method, which we've already covered, is just to use the cross validation methods described in chapter 5. Alternatively, there are some methods of adjusting the training error rate in order to select a method that   
-*should* have a small testing error rate. The listed methods are Mallow's $C_p$, Akaike information criterion (AIC), Bayesian information criteria (BIC), and the adjusted $R^2$. I think I'll try and do a little more research on these than is listed in the book since the explanations I got for a few of these were pretty handwavy in graduate school.  
+1. Begin with a null model $\mathcal{M}_0$. In the case of forward, this is the intercept only. For backward, we start with the full model.  
+2. Add or remove (depending on direction) predictors one by one and compute a summary statistic for each such as RSS. Select the model the best of these models as $\mathcal{M}_1$.  
+3. For each subsequent $1<i\leq p$, build upon the the previous model. Again consider all of the $p-i+1$ remaining predictors and choose one to add/remove from the model and set the best of these as $\mathcal{M}_i$.  
+4. Cross validate $\mathcal{M}_0, \mathcal{M}_1, ..., \mathcal{M}_p$ or use another metric to choose the best subset of predictors.   
+These are pretty reasonable ways to select a model in my opionin as they do not have to fit nearly as many models ($\frac{p(p+1)}{}$).  
+Some other things to note about stepwise selection methods:
+  
+a. Forward and backward selection do not necessarily yield the same results althoug the subsets are often similar or identical.  
+b. There is no guarantee that the the best model is actually considered in these methods. The are what you might call 'greedy' algorithms in which they try to maximize at each step. The true best model could involve just two predictors, neither of which would be selected in the first round of forward selection.  
+c. When $n<p$, backwards selection cannot be performedand forward selection will terminate at subsets of size $n$.  
+d. There are hybrid approaches in which we set criteria to enter as well as leave. These methods sometimes behave like 'after each additional variable is added, the other predictors are then re-evaluated for removal' and then there is some kind of stopping procedure to make sure this doesn't go in loops.  
+  
+  The next portion of the text describes some ways of choosing the 'best' subset. One method, which we've already covered, is just to use the cross validation methods described in chapter 5. Alternatively, there are some methods of adjusting the training error rate in order to select a method that *should* have a small testing error rate. The listed methods are Mallow's $C_p$, Akaike information criterion (AIC), Bayesian information criteria (BIC), and the adjusted $R^2$.
   
 Mallow's $C_p$ is just a transformation of the residual sum of squares:
 $$C_p = \frac{1}{n}(RSS+2d\hat{\sigma}^2)$$
@@ -95,15 +110,296 @@ Another measure in this line is the *Bayesian information criteria* which is qui
 $$BIC=k\cdot ln(n)-2ln(L)\approx \frac{1}{n\hat{\sigma}^2}(RSS-log(n)d\hat{\sigma}^2)$$
 In general, we will have data sets with more than 7 observations so $log(n)>2$. This indicates that the BIC more heavily penalizes models with many predictors than the AIC does. 
   
-The last measure listed here is the *adjusted R^2$* which I have heard lots of complaints about but have not looked into the reasoning for these complaints yet. It's given as:
+The last measure listed here is the *adjusted $R^2$* which I have heard lots of complaints about but have not looked into the reasoning for these complaints yet. It's given as:
 $$\text{Adj. }R^2=1-\frac{RSS/(n-d-1)}{TSS/(n-1)}$$
-Here the goal is to maximize the adjusted R$^2$ which really just means minimizing $RSS/(n-d-1)$ since the TSS is fixed for a given data set. Unlike $R^2$, this can potentially go down with more predictors if the addition of a variable does not provide a sufficient reduction in RSS. The authors note that while there is a decent intuition behind the adjusted R$^2$, there is no real theorhetical derivation of this as a useful metric.
+Here the goal is to maximize the adjusted $R^2$ which really just means minimizing $RSS/(n-d-1)$ since the TSS is fixed for a given data set. Unlike $R^2$, this can potentially go down with more predictors if the addition of a variable does not provide a sufficient reduction in RSS. The authors note that while there is a decent intuition behind the adjusted R$^2$, there is no real theoretical derivation of this as a useful metric. 
 
+The last portion of this section describes using cross validation methods to select a model. The methods are the same as described in chapter 5. One other thing they note is people sometimes use the *one standard deviation rule*. This is a method of selecting among models with similar testing MSE/error rate. It basically suggests that if there are multiple models within one standard deviation of the MSE of the best performing model, choose the one with the least predictors. This allows you to pick a more parsimonious model from among comparable options.
 
 #### 6.2: Shrinkage Methods
 
+The next section describes two techniques that were previously unknown to me: ridge and lasso regression. These techniques aim to solve the following problem; although linear models are less flexible than many of the other techniques described in this book, they still can be too flexible for a particular problem. In particular, if you have many predictors the model fit can pick up on irrelevant noise from some of them that leads to increased errors in the testing set. Another issue that can cause high variance in linear models is highly correlated predictors. 
+  
+  As a result, ridge and lasso models introduce some additional bias in the form of a constraint on the predictors in order to reduce the variance estimates compared to ordinary least squares regression. These constraints are called *shrinkage* methods because they reduce the influence of one or more of the predictors in order to produce coefficient estimates that will be more stable over different data sets. The reason we would consider this bias is that if the assumptions of the linear model are fit, we're introducing another model specification that moves us away from a smaller training error rate. Another source I looked at said that these methods *desensitize* linear models so as to reduce overfitting.
+  
+The formulation for these methods is similar. Instead of simply minimizing the sum of square errors, as OLS does, we minimize this quantity:
+$$\sum_{i=1}^n\left(y_i-\beta_0+\sum_{j=1}^p\beta_jx_{i,j}\right)^2+\lambda f(\boldsymbol{\beta})$$
+The first term is just the square errors (RSS), $\lambda\geq0$ is called a *tuning parameter*, and $f(\boldsymbol{\beta})\geq0$ is a function of the coefficients (but not the intercept).  
+  
+So what is this doing? Unlike the OLS, we now have two considerations to take into account for selecting the coefficient estimates. First, we still consider the size of the errors in that we want a small RSS. The second term tells us that we're also trying to have a small $f(\boldsymbol{\beta})$. I imagine that there are other constraints you can use but in the case of the ridge and lasso, $f$ is increasing with respect to each parameter. 
+  
+For the ridge, $f(\boldsymbol{\beta})$ is what is called the 'ell 2' ($\ell_2$) norm:
+$$f(\boldsymbol{\beta})=\|\boldsymbol{\beta}\|_2=\sqrt{\sum_{i=1}^n\beta_i^2}$$
+And for the lasso it's the $\ell_1$ norm:
+$$f(\boldsymbol{\beta})=\|\boldsymbol{\beta}\|_1=\sum_{i=1}^n|\beta_i|$$
+I imagine that $\ell_3$ would be the cube root of the sum of cubes? In any case, we can see that these functions increase as the parameter estimates grow. As a result, smaller parameter estimates will be considered when fitting the ridge & lasso models. This is where the shrinkage from; larger coefficient estimates incur a higher penalty and thus must be associated with a looser model fit (RSS).  
+  
+When we set $\lambda=0$ we get the OLS estimates. When $\lambda>>0$, the coefficients will be drive towards zero and we'll get something close to then null model. As the tuning parameter is increased, the bias will increase (nonlinearly) and the variance will decrease (also non-linearly). The graphs in an example given suggest that there may be some 'sweet spot' where you add a little bit of bias, get a sizable reduction in variance, and then stop increasing $\lambda$. Therefore, choosing the tuning parameter is an issue that is discussed a little later.   
+  
+  When I first saw this I thought it seemed extremely silly as it initially looks like the penalty will not be applied equally across the various predictors if they have different scales. This is true however the authors note that people typically scale the parameters (divide by their sample standard deviation) before using these techniques.  
+    
+They give another formulation of this which is that we could consider this problem:
+$$\text{minimize}\sum_{i=1}^n\left(y_i-\beta_0+\sum_{j=1}^p\beta_jx_{i,j}\right)^2 \text{subject to }f(\boldsymbol{\beta})\leq s$$
+They say that once you choose a $\lambda$, then there is some $s$ that this problem produces the same coefficient estimates as the lasso/ridge regression. I didn't find this transition to be very clear but I found [this youtube](https://www.youtube.com/watch?v=5asL5Eq2x0A) video that took a different tact.  
+  
+Instead of starting the quantity involving $\lambda$, they start by saying we're going to minimize the RSS under the constraint that $\ell_2<c^2$ (for ridge regression). This is essentially saying that the betas must be confined within a circle/sphere/multidimensional circle. Then the video says that in order to minimize RSS under this constraint, we use a Lagrange multiplier. I had basically blocked this out from my memory but essentially if we have a function $f(x)$ that we want to minimize and a constraint function $g(x)$, then we can look for the saddle point of 
+$$\mathcal{L}(x, \lambda)=f(x)-\lambda g(x)$$
+And this will produce the minimum value for $f(x)$.  
+  
+For our case, we can assume that the OLS estimate will be on the outside of our constraint (otherwise we would just use the OLS estimate) and thus the optimal solution will be on the edge of the circle and not inside. Thus we'll make the constraint an equality $g(\boldsymbol{\beta}) = \|\boldsymbol{\beta}\|_2-c^2=0$.
+   
+  Now our Lagrange multiplier thingie is like this:
+
+$$\mathcal{L}(\boldsymbol{\beta}, \lambda)=\sum_{i=1}^n\left(y_i-\beta_0+\sum_{j=1}^p\beta_jx_{i,j}\right)^2-\lambda(\|\boldsymbol{\beta}||_2-c^2)$$
+And then if we fix $\lambda$, then we can drop the $-c^2$ since this will just be a constant in our minimization task. This will give us the quantity that the authors describe.  
+  
+Okay, I'm glad that I went through that as I feel a bit better about the connections of these two formulations of the ridge/lasso. When we choose a particular lambda, this sets the budget for our entire set of non-intercept coefficients. We are setting a maximum for them collectively which is the shrinkage. The exact shape of the constraint applied is what differentiates the ridge and lasso. We'll see that this does have consequences in how they behave and perform in different settings.  
+  
+Another aspect of this that I found interesting is that this can be similar to the subset selection we previously discussed. We could write the the subset selection process for at most $s$ predictors to be:
+
+$$\text{minimize}\sum_{i=1}^n\left(y_i-\beta_0+\sum_{j=1}^p\beta_jx_{i,j}\right)^2 \text{subject to }\sum_{j=1}^pI(\beta_j\neq0)\leq s$$
+In the case of the ridge, the coefficients will typically not (never?) reach zero but for the lasso, this is quite likely if we keep cranking up $\lambda$. I found this to be a very interesting and not intuitive so I spent (probably too long) trying to get some intuition about why lasso can be used to perform variable but the ridge cannot. 
+  
+If we think about the case of two predictors and set the constraint to $c^2=1$, then the possible betas for the lasso live in a square (yellow) and those for the ridge lie in a circle (green). If the OLS estimate is $\beta_1 =\beta_2=2$, we could plot some contour plots out from this (note they probably would be elipses not cirlces.)
+
+```{r lass_ridge, echo = FALSE}
+
+lasso_df = tibble(
+  x = c(0, 1, 0, -1, 0),
+  y = c(1, 0, -1, 0, 1)
+)
+
+ggplot() +
+  geom_path(
+    data = lasso_df,
+    mapping = aes(
+      x = x,
+      y = y
+    ),
+    size = 2,
+    color = 'darkgoldenrod1'
+  ) +
+  ggforce::geom_circle(
+    mapping = aes(
+      x0 = 0,
+      y0 = 0,
+      r = 1
+    ),
+    color = 'limegreen',
+    size = 2
+  ) +
+  geom_path(
+    data = lasso_df,
+    mapping = aes(
+      x = x,
+      y = y
+    ),
+    size = 2,
+    color = 'darkgoldenrod1'
+  ) +
+  geom_point(
+    data = NULL,
+    aes(
+      x = 1,
+      y = 1
+    ),
+    size = 2
+  ) +
+  ggforce::geom_circle(
+    mapping = aes(
+      x0 = 1,
+      y0 = 1,
+      r = c( 0.25, sqrt(2*(1-sqrt(0.5))^2), sqrt(2*(.5)^2))
+    ),
+    color = 'black',
+    size = 1,
+    linetype = 'dotted'
+  ) + 
+  theme_minimal() +
+  scale_x_continuous(
+    limits = c(-1.5, 2)
+  ) +
+  scale_y_continuous(
+    limits = c(-1.5,2)
+  ) +
+  labs(
+    x = '\u03B21',
+    y = '\u03B22'
+  )
+
+```
+  The intersection points between the contour lines and the constraints are the estimates that the lasso and ridge will select.
+
+The intuition given by the authors on why the lasso will zero out particular coefficients but the ridge will not is based on this visualization. I don't have a particularly good geometric intuition but here is what I see:  
+  
+If we think about the OLS estimates as being uniformly distributed on the plane, when we extend circular contour lines out from them, there aren't any points on the circle that are particularly likely to be the first intersection point. Conversely, the corners of the lasso's square will have a larger proportion of the possible contours hit them than any particular point on the sides of the square. I thought about trying to prove this but I thought maybe an expansion on this visual would be more illuminating. Here I have just drawn the top half of the square and a few different contour rings:
+
+```{r lass_ridge2, echo = FALSE}
+
+lasso_df2 = tibble(
+  x = c(-1, 0, 1),
+  y = c(0, 1, 0)
+)
+
+ggplot() +
+  geom_path(
+    data = lasso_df2,
+    mapping = aes(
+      x = x,
+      y = y
+    ),
+    size = 2,
+    color = 'darkgoldenrod1'
+  ) +
+  geom_abline(
+    intercept = 1,
+    slope = -1,
+    size = 2,
+    color = 'darkgoldenrod1',
+    linetype = 'dashed'
+  ) +
+  geom_abline(
+    intercept = 1,
+    slope = 1,
+    size = 2,
+    color = 'darkgoldenrod1',
+    linetype = 'dashed'
+  ) +
+  geom_point(
+    data = NULL,
+    aes(
+      x = 1,
+      y = 1
+    ),
+    size = 2
+  ) +
+  ggforce::geom_circle(
+    mapping = aes(
+      x0 = 1,
+      y0 = 1,
+      r = seq(from = 0, to = sqrt(2*(.5)^2), by = sqrt(2*(.5)^2)/3)
+    ),
+    color = 'black',
+    size = 1,
+    linetype = 'dotted'
+  ) +
+  geom_point(
+    data = NULL,
+    aes(
+      x = -1/4,
+      y = 1.5
+    ),
+    color ='orange4',
+    size = 2
+  )  +
+  ggforce::geom_circle(
+    mapping = aes(
+      x0 = -1/4,
+      y0 = 1.5,
+      r = seq(from = 0, to = sqrt((-1/4-0)^2+(1.5-1)^2), by = sqrt((-1/4-0)^2+(1.5-1)^2)/3)
+    ),
+    size = 1,
+    linetype = 'dotted',
+    color = 'orange4'
+  ) +
+  geom_point(
+    data = NULL,
+    aes(
+      x = 1/8,
+      y = 1.25
+    ),
+    color ='darkslateblue',
+    size = 2
+  )  +
+  ggforce::geom_circle(
+    mapping = aes(
+      x0 = 1/8,
+      y0 = 1.25,
+      r = seq(from = 0, to = sqrt((-1/8-0)^2+(1.25-1)^2), by = sqrt((-1/8-0)^2+(1.25-1)^2)/3)
+    ),
+    size = 1,
+    linetype = 'dotted',
+    color = 'darkslateblue'
+  ) +
+  geom_point(
+    data = NULL,
+    aes(
+      x = -3/4,
+      y = 0.5
+    ),
+    color ='mediumseagreen',
+    size = 2
+  )  +
+  ggforce::geom_circle(
+    mapping = aes(
+      x0 = -3/4,
+      y0 = 0.5,
+      r = seq(from = 0, to = sqrt((-3/4+5/8)^2+(0.5-3/8)^2), by = sqrt((-3/4+5/8)^2+(0.5-3/8)^2)/3)
+    ),
+    size = 1,
+    linetype = 'dotted',
+    color = 'mediumseagreen'
+  ) + 
+  theme_minimal() +
+  scale_x_continuous(
+    limits = c(-1.5, 2)
+  ) +
+  scale_y_continuous(
+    limits = c(0, 2)
+  ) +
+  labs(
+    x = '\u03B21',
+    y = '\u03B22'
+  ) + 
+  coord_fixed()
+
+
+
+```
+  So I think if the least squares estimate is in that upper triangle, then it will intersect the corner and drop one of the two variables, otherwise, it will intersect the side and keep a combination of the two. This picture simplifies it since the actual contour curves will rarely be circular but I think a similar logic will apply to various elipses ect.
+  
+The next thing noted is that there are some differences in situations where these techniques perform. If it's the case that there are some variables that truly don't relate to the outcome (frequently in my experience) the lasso of regression method will perform better. If this is not the case, then the lasso will be more biased than the ridge regression because you will set some coefficients to zero when they actually have a weak relationship. 
+  
+  Another thing they note here through a somewhat contrived example is that the shrinkage that the lasso applies is by a fixed quantity ($\beta-\delta$) whereas the ridge method applies a scaling shrinkage ($\beta\cdot\delta$). As a result, the ridge will apply the strongest shrinkage to the largest parameters and the least to the weakest so situations where you have a lot of weaker predictors, this will be better than the lasso. Another thing to think about with the difference in the shrinkages applied is that a scaling a non-zero change will never go to zero but sliding it will which is in line with the lasso performing variable selection while the ridge method does not.
+  
+The authors also give some other comments about how this can be interpreted from a Bayesian perspective but I didn't understand this to well so maybe we'll get back to it a bit late-ah.
+  
+Last bit to mention is the method to select a tuning parameter. The authors mainly suggest that we should just use cross validation to test a number of different values for the tuning parameter. I don't have any experience doing this so I don't really know what reasonable values would be to start with. In the absence of any other guidance or experience, I suspect you would just try a random array of values and if the minimum value is on one of the ends of your array of $\lambda s$, then we should continue to try more values off in that directions until we get an arc of testing MSE estimates.
+  
 #### 6.3: Dimension Reduction Methods
 
+The next section concerns methods to deal with high dimensionality. There are a variety of applications for this but they chiefly involve us trying to simplify problems that have too many predictors to either actually fit models or interpret them. I used PCA a bit some years ago to create some visualizations and am eager to see if it's easier to understand this go around. I know that this method is sometimes used in genetics because they sometimes have *many* genes identified per subject but a small number of subjects. As a result, they need to be able to summarize genetic variation in a more succinct way.   
+  
+One method of dimension reduction is to form a set of *linear combinations*, $Z_1, Z_2,...,Z_M$, of our initial predictors $X_1, X_2,..., X_p$ where $0<M<p$. Here each $Z_m$ can be written as:
+$$Z_m = \sum_{j=1}^p\phi_{j,m}X_j$$
+Where each $\phi_{j,m}$ is a constant, some of which can be zero (or close). After creating these transformations of our initial predictors, we can use them to form a regression model:
+  
+$$y_i=\theta_0+\sum_{m=1}^M\theta_mZ_m+\epsilon_i\text{, i = 1, 2,...,n}$$
+Because $M<p$, we have a sense of dimension reduction in this model. The total number of predictors that we need to deal with has been reduced. The non-intercept terms of a single observation this model can be re-written as:
+$$\sum_{m=1}^M\theta_mZ_m=\sum_{m=1}^M\left(\theta_m\cdot\sum_{j=1}^p\phi_{j,m}x_j\right)=\sum_{j=1}^p\sum_{m=1}^M\left(\theta_m\cdot\phi_{j,m}x_j\right)=\sum_{j=1}^p\beta_jX_j$$
+So essentially what this is saying is that if we break apart all the linear combinations, we can reorganize the regression model back in terms of just the original predictors. Therefore, this is just a special case of the other regression models but with fewer parameters that need to be estimated.
+  
+In general, these dimension reduction methods are done in two steps:  
+  
+1. First the new, linear combination variables are estimated ($Z_1, Z_2,..., Z_m$)
+2. A regression is performed using these new variables.
+  
+Variation upon this comes from the method to choose the new variables. The first method listed here is *principal component analysis/regression (PCA/R)* which is an unsupervised method. This methods rests on the assumption that the axes of which the predictors vary the most are also good predictors of the outcome. In many cases, this is intuitively true. If a variable has predictive power, it lies in the differential relationship between predictor values and responses so the assumption makes sense *given that the predictor is at all useful*. Additionally, this method tends to perform the best when there are relatively few important axes of variation. If the data varies in many directions at once, the benefits of reducing the dimensions starts being lost and we will eventually be no better off than just using the predictors as is.
+
+PCA is an iterative method where we create *components*, the linear combinations of predictors, in a sequence. The first component is the axis of the most variation. A way to think of this is that it is a 'line' that if each observation in our training set was projected on to it (shortest possible distance), then these points will have the maximal variance of all possible lines. If the data were to form a 3D sausage, the first principal component would be a skewer through the center of its longest axis. As we discussed in the linear regression chapter, variables with wider supports will be stronger predictors with everything else held equal. Therefore, we hope that the first principal component is a strong predictor of the outcome.
+  
+After finding the first principal component, the process is then repeated with a restriction. Each additional component must orthogonal to all the previous components (dot product to zero). In this way, the components that we identify are distinct axes of variation that do not contain the same kind of information. We typically continue creating these components until we have $p$ of them.
+  
+The final step is to create regression models using these predictors. Typically, we would use a cross validation technique to determine when to stop adding components. Note that we would not end up with models that involve skipping any of the components as they should be decreasing in utility. 
+  
+Some additional notes:
+  
+1. Typically, we standardize all the predictors for this type of regression.  
+2. The situations that this method performs the best in are when we have only a few axes of variation and the dimensions are reduced by a lot.  
+3. This is not a subset selection method. Typically each of the components will use every predcitor so the total number needed is the same as in the original data set.
+  
+  
+  
 #### 6.4: Considerations in High Dimensions
 
 ### Lab

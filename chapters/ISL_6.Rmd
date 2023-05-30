@@ -496,13 +496,97 @@ So there is some disagreement by summary statistic as to which to use although w
 
 You can also look at the variables used in the subsets:
 
-```{r hitters4}
 
-plot(best_subsets_summ, scale = 'r2')
+```{r hitters4}
+par(mfrow = c(1,1))
+plot(best_subsets, scale = 'r2')
+
+```
+
+Forward and backward selection:
+
+```{r hitters5}
+
+regfit.forward = leaps::regsubsets(
+  Salary ~ .,
+  data = Hitters,
+  nvmax = 19,
+  method = 'forward'
+)
+
+regfit.backward = leaps::regsubsets(
+  Salary ~ .,
+  data = Hitters,
+  nvmax = 19,
+  method = 'backward'
+)
+
+summary(regfit.backward)
+summary(regfit.forward)
+
+```
+
+Notice that there are some differences between the two directions as well as with the other subset methods we just tried:
+
+```{r hitters6}
+
+setdiff(
+  names(coef(regfit.forward, 7)),
+  names(coef(regfit.backward, 7))
+)
+
+```
+
+In order to cross validate these subset selection methods, we can divide the data into training and test sets.
+
+```{r validate_hitters}
+
+set.seed(1)
+train = sample(c(TRUE, FALSE), nrow(Hitters), replace = TRUE)
+test = !train
+
+regfit.best = leaps::regsubsets(
+  Salary ~ ., 
+  data = Hitters[train,],
+  nvmax = 19
+)
+
+test.mat = model.matrix(
+  Salary ~ .,
+  data = Hitters[test,]
+)
+
+val.errors = rep(NA, times = 19)
+
+for(i in 1:19){
+  
+  coefi = coef(regfit.best, id = i)
+  pred = test.mat[,names(coefi)]%*%coefi
+  val.errors[i] = mean((Hitters$Salary[test]-pred)^2)
+  
+}
+
+tibble(
+  p = 1:19,
+  test_mse = val.errors
+) |> 
+  ggplot(
+    aes(x = p, y = test_mse)
+  ) +
+  geom_path() +
+  geom_point() +
+  scale_y_continuous(limits = c(0, 1.1*max(val.errors))) +
+  labs(
+    x = 'N Predictors',
+    y = 'Mean Square Error'
+  ) +
+  theme_minimal()
 
 
 ```
 
+
 ### Exercises
   
 #### 1
+

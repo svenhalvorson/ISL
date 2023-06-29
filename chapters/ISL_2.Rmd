@@ -23,7 +23,7 @@ library('kableExtra')
 * **Systematic information**: The function $f$ that relates predictors to responses encapsulates the systematic information.
 * **Error term**: A random error, usually denoted by $\epsilon$ that is generally assumed to independent of $X$ and have a mean of zero. This is the error that cannot be accounted for by the systematic information.
 * **Reducible and irreducible error**: The errors we make in predictions can be thought of being of two types. The reducible error are mistakes that can be reduced by better estimating the link function $f$. The irreducible error is the residual error that would still be present if we perfectly selected $f$.
-* **Training and testing data**: The initial set of observations used to estimate $f$ is called the testing data. Other data called the training set, possibly a subset of your original data set, is used to evaluate the effectiveness of $\hat{f}$,
+* **Training and testing data**: The initial set of observations used to estimate $f$ is called the training data. Other data called the training set, possibly a subset of your original data set, is used to evaluate the effectiveness of $\hat{f}$,
 * **Parametric vs. non-parametric models**: Parametric models assume the general form of $f$ and estimate parameters while non-parametric models do not.
 * **Overfitting**: A model that too closely fits the training dat and consequently fails on the testing data is called overfit. The model is too closely following the irreducible errors.
 * **Regression vs. classification**: We divide supervised learning problems into regression if the response is quantitative and classification if the response is qualitative or ordinal.

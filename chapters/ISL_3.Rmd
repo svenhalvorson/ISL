@@ -5,7 +5,10 @@ author: 'Sven Halvorson'
 output:
   html_document:
     toc: yes
-    toc_depth: 5
+    toc_depth: 4
+    theme: 'cerulean'
+    toc_float: true
+    code_folding: hide
 editor_options: 
   chunk_output_type: console
 ---

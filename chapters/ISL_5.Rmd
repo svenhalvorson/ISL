@@ -1,4 +1,4 @@
-s---
+---
 title: 'Chapter 5: Resampling Methods'
 subtitle: "<span style='font-size: 20px'>Notes from ISL</style>"
 author: 'Sven Halvorson'
@@ -6,6 +6,9 @@ output:
   html_document:
     toc: yes
     toc_depth: 4
+    theme: 'cerulean'
+    toc_float: true
+    code_folding: hide
 editor_options: 
   chunk_output_type: console
 ---

@@ -6,6 +6,9 @@ output:
   html_document:
     toc: yes
     toc_depth: 4
+    theme: 'cerulean'
+    toc_float: true
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}

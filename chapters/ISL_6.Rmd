@@ -405,7 +405,11 @@ Some additional notes:
   
 1. Typically, we standardize all the predictors for this type of regression.  
 2. The situations that this method performs the best in are when we have only a few axes of variation and the dimensions are reduced by a lot.  
+<<<<<<< HEAD
+3. This is not a subset selection method. Typically each of the components will use every predictor so the total number needed is the same as in the original data set.
+=======
 3. This is not a subset selection method. Typically each of the components will use every predictor so the total number needed is the same as in the original data set.  
+>>>>>>> 1089ea5bf853d42b3f7af3f02ead26feaa9eae1e
   
   
 #### 6.4: Considerations in High Dimensions
